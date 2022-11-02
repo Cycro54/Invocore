@@ -4,10 +4,10 @@ plugins {
 
 
 group = 'invoker54'
-version = '1.0'
+version = '1.1.0'
 
 java {
-    archivesBaseName = 'invocore'
+    archivesBaseName = 'invocore-1.16.5'
     toolchain.languageVersion = JavaLanguageVersion.of(8)
 }
 
@@ -98,9 +98,9 @@ repositories {
     // ForgeGradle automatically adds the Forge maven and Maven Central for you
 
     // If you have mod jar dependencies in ./libs, you can declare them as a repository like so:
-    // flatDir {
-    //     dir 'libs'
-    // }
+     flatDir {
+         dir 'libs'
+     }
 }
 
 dependencies {

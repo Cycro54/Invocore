@@ -1,4 +1,4 @@
-package invoker54.invocore;
+package invoker54.invocore.client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -63,7 +63,7 @@ public class ClientUtil {
         bufferbuilder.pos(lastPos, (float)targetUP.getX(), (float)targetUP.getY(), (float)targetUP.getZ()).color(f, f1, f2, f3).endVertex();
         bufferbuilder.pos(lastPos, (float)targetDOWN.getX(), (float)targetDOWN.getY(), (float)targetDOWN.getZ()).color(f, f1, f2, f3).endVertex();
         bufferbuilder.pos(lastPos, (float)originDOWN.getX(), (float)originDOWN.getY(), (float)originDOWN.getZ()).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.endVertex();
+        bufferbuilder.finishDrawing();
         WorldVertexBufferUploader.draw(bufferbuilder);
         RenderSystem.enableDepthTest();
         RenderSystem.enableTexture();
@@ -102,7 +102,7 @@ public class ClientUtil {
         bufferbuilder.pos(lastPos, (float)targetUP.getX(), (float)targetUP.getY(), (float)targetUP.getZ()).tex(u1, v0).endVertex();
         bufferbuilder.pos(lastPos, (float)targetDOWN.getX(), (float)targetDOWN.getY(), (float)targetDOWN.getZ()).tex(u1, v1).endVertex();
         bufferbuilder.pos(lastPos, (float)originDOWN.getX(), (float)originDOWN.getY(), (float)originDOWN.getZ()).tex(u0, v1).endVertex();
-        bufferbuilder.endVertex();
+        bufferbuilder.finishDrawing();
         WorldVertexBufferUploader.draw(bufferbuilder);
         RenderSystem.enableDepthTest();
         RenderSystem.disableTexture();
@@ -129,9 +129,8 @@ public class ClientUtil {
         bufferbuilder.pos(lastPos, (float)x1, (float)y1, (float)0).tex(u1, v1).endVertex();
         bufferbuilder.pos(lastPos, (float)x1, (float)y0, (float)0).tex(u1, v0).endVertex();
         bufferbuilder.pos(lastPos, (float)x0, (float)y0, (float)0).tex(u0, v0).endVertex();
-        bufferbuilder.endVertex();
+        bufferbuilder.finishDrawing();
         WorldVertexBufferUploader.draw(bufferbuilder);
-
         RenderSystem.enableDepthTest();
     }
     public static void blitColor(MatrixStack stack, int x0, int width, int y0, int height, int color){
@@ -153,7 +152,7 @@ public class ClientUtil {
         bufferbuilder.pos(lastPos, (float)x1, (float)y1, (float)0).color(f, f1, f2, f3).endVertex();
         bufferbuilder.pos(lastPos, (float)x1, (float)y0, (float)0).color(f, f1, f2, f3).endVertex();
         bufferbuilder.pos(lastPos, (float)x0, (float)y0, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.endVertex();
+        bufferbuilder.finishDrawing();
         WorldVertexBufferUploader.draw(bufferbuilder);
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
