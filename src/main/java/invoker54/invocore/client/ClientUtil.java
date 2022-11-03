@@ -16,6 +16,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.Matrix4f;
 import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraft.util.text.ITextComponent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,8 +27,8 @@ import java.util.ArrayList;
 
 public class ClientUtil {
     public static final Minecraft mC = Minecraft.getInstance();
-    public static final TextureManager TEXTURE_MANAGER = mC.textureManager;
-    public static final ItemRenderer ITEM_RENDERER = mC.getItemRenderer();
+    public static final TextureManager TEXTURE_MANAGER = Minecraft.getInstance().textureManager;
+    public static final ItemRenderer ITEM_RENDERER = Minecraft.getInstance().getItemRenderer();
     public static final DecimalFormat d1 = new DecimalFormat("0.0");
     // Directly reference a log4j logger.
     private static final Logger LOGGER = LogManager.getLogger();
@@ -277,7 +278,7 @@ public class ClientUtil {
         }
 
         @Override
-        public void render(MatrixStack stack, int xMouse, int yMouse, float partialTicks) {
+        public void renderWidget(MatrixStack stack, int xMouse, int yMouse, float partialTicks) {
             if (hidden) return;
 
             FontRenderer fontrenderer = mC.fontRenderer;
