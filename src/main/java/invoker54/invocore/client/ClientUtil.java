@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.widget.button.Button;
+import net.minecraft.client.gui.widget.list.AbstractList;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.Tessellator;
@@ -18,12 +19,16 @@ import net.minecraft.util.math.vector.Matrix4f;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraftforge.fml.client.gui.GuiUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nonnull;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class ClientUtil {
     public static final Minecraft mC = Minecraft.getInstance();
@@ -267,7 +272,7 @@ public class ClientUtil {
         return y1;
         }
     }
-
+    
     public static class SimpleButton extends Button {
 
         public boolean hidden = false;
@@ -411,6 +416,190 @@ public class ClientUtil {
             TEXTURE_MANAGER.bindTexture(this.location);
             blitImage(stack, x0, actualWidth, y0, actualHeight, u0, imageWidth, v0, imageHeight, scale);
             TEXTURE_MANAGER.deleteTexture(this.location);
+        }
+    }
+
+    public class SimpleList extends AbstractList<ListEntry> {
+        public final List<ITextComponent> toolTip = new ArrayList<>();
+        Image background;
+        int screenWidth;
+        int screenHeight;
+        
+        protected boolean sellMode = false;
+        protected int sellIndex = -1;
+        protected ListEntry hoverEntry = null;
+
+
+        //Height is used for how long you want the top and bottom panels to be if you had
+        //renderTopAndBottom set to true.
+        public SimpleList(int x0, int width, int y0, int height, int screenWidth, int screenHeight, Image background) {
+            super(ClientUtil.mC, width, 0, y0, y0 + height, 30);
+            this.x0 = x0;
+            this.x1 = x0 + width;
+            this.func_244605_b(false);
+            this.func_244606_c(false);
+            this.setRenderHeader(false, 0);
+            this.screenWidth = screenWidth;
+            this.screenHeight = screenHeight;
+
+            LOGGER.debug("WHATS MY X0: " + x0);
+            LOGGER.debug("WHATS MY WIDTH: " + width);
+            LOGGER.debug("WHATS MY Y0: " + y0);
+            LOGGER.debug("WHATS MY HEIGHT: " + height);
+        }
+
+        public void recalcWidth(){
+            int width = 0;
+
+            for (ListEntry entry : this.getEventListeners()){
+                if (entry.getWidth() > width){
+                    width = entry.getWidth();
+                }
+            }
+
+            //Set width
+            this.width = width;
+        }
+
+        public void updatePosition(int x0, int y0, int height) {
+            this.setLeftPos(x0);
+            this.y0 = y0;
+            this.y1 = y0 + height;
+        }
+
+        @Override
+        public void render(MatrixStack stack, int xMouse, int yMouse, float partialTicks) {
+            super.render(stack, xMouse, yMouse, partialTicks);
+
+            ClientUtil.endCrop();
+            if (!toolTip.isEmpty()){
+                GuiUtils.drawHoveringText(stack, this.toolTip, xMouse, yMouse, screenWidth, screenHeight,-1,mC.fontRenderer);
+                this.toolTip.clear();
+            }
+            ClientUtil.beginCrop(background.x0, background.getWidth(), background.y0 + 5, background.getHeight(), true);
+        }
+
+//        protected int getRowTop(int p_230962_1_) {
+//            return this.y0 + 4 - (int)this.getScrollAmount() + p_230962_1_ * this.itemHeight + this.headerHeight;
+//        }
+
+        @Override
+        protected void renderList(MatrixStack stack, int p_238478_2_, int p_238478_3_, int xMouse, int yMouse, float p_238478_6_) {
+            int i = this.getItemCount();
+            hoverEntry = null;
+//            Tessellator tessellator = Tessellator.getInstance();
+//            BufferBuilder bufferbuilder = tessellator.getBuilder();
+
+            int currY0 = (int) (this.y0 - this.getScrollAmount());
+            for(int index = 0; index < i; ++index) {
+                //Top
+                int k = currY0;
+                //Bottom
+//                int l = k + this.getEntry(index).getHeight();
+//                  int y0 = p_238478_3_ + index * this.itemHeight + this.headerHeight;
+                int height = this.getEntry(index).getHeight();
+                ListEntry e = this.getEntry(index);
+                int k1 = this.getRowWidth();
+//                    if (this.isSelectedItem(index)) {
+//                        int l1 = this.x0 + this.width / 2 - k1 / 2;
+//                        int i2 = this.x0 + this.width / 2 + k1 / 2;
+//                        RenderSystem.disableTexture();
+//                        float f = this.isFocused() ? 1.0F : 0.5F;
+//                        RenderSystem.color4f(f, f, f, 1.0F);
+//                        bufferbuilder.begin(7, DefaultVertexFormats.POSITION);
+//                        bufferbuilder.vertex((double)l1, (double)(y0 + height + 2), 0.0D).endVertex();
+//                        bufferbuilder.vertex((double)i2, (double)(y0 + height + 2), 0.0D).endVertex();
+//                        bufferbuilder.vertex((double)i2, (double)(y0 - 2), 0.0D).endVertex();
+//                        bufferbuilder.vertex((double)l1, (double)(y0 - 2), 0.0D).endVertex();
+//                        tessellator.end();
+//                        RenderSystem.color4f(0.0F, 0.0F, 0.0F, 1.0F);
+//                        bufferbuilder.begin(7, DefaultVertexFormats.POSITION);
+//                        bufferbuilder.vertex((double)(l1 + 1), (double)(y0 + height + 1), 0.0D).endVertex();
+//                        bufferbuilder.vertex((double)(i2 - 1), (double)(y0 + height + 1), 0.0D).endVertex();
+//                        bufferbuilder.vertex((double)(i2 - 1), (double)(y0 - 1), 0.0D).endVertex();
+//                        bufferbuilder.vertex((double)(l1 + 1), (double)(y0 - 1), 0.0D).endVertex();
+//                        tessellator.end();
+//                        RenderSystem.enableTexture();
+//                    }
+
+                int j2 = this.getRowLeft();
+                e.render(stack, index, k, j2, k1, height, xMouse, yMouse, this.isMouseOver((double) xMouse, (double) yMouse) && Objects.equals(this.getEntryAtPosition((double) xMouse, (double) yMouse), e), p_238478_6_);
+                currY0 += e.getHeight();
+                if (e.isMouseOver(xMouse, yMouse)){
+                    hoverEntry = e;
+                }
+
+            }
+        }
+
+        @Override
+        public int getRowLeft() {
+            return x0;
+        }
+
+        @Override
+        public int addEntry(@Nonnull ListEntry entry) {
+            return super.addEntry(entry);
+        }
+
+        @Override
+        protected int getScrollbarPosition() {
+            return x0 + getRowWidth();
+        }
+
+        @Override
+        public int getRowWidth() {
+            return this.width;
+        }
+
+        @Override
+        public boolean mouseClicked(double xMouse, double yMouse, int button) {
+            this.updateScrollingState(xMouse, yMouse, button);
+            if (!this.isMouseOver(xMouse, yMouse)) {
+                return false;
+            } else {
+                if (hoverEntry != null) {
+                    if (hoverEntry.mouseClicked(xMouse, yMouse, button)) {
+                        this.setListener(hoverEntry);
+                        this.setDragging(true);
+                        return true;
+                    }
+                } else if (button == 0) {
+                    this.clickedHeader((int)(xMouse - (double)(this.x0 + this.width / 2 - this.getRowWidth() / 2)), (int)(yMouse - (double)this.y0) + (int)this.getScrollAmount() - 4);
+                    return true;
+                }
+
+                return false;
+            }
+        }
+    }
+
+    public class ListEntry extends AbstractList.AbstractListEntry<ListEntry> {
+        protected SimpleList parent;
+        protected int height = 0;
+        protected int heightPadding = 1;
+        protected boolean isMouseOver = false;
+        public ListEntry(SimpleList parent){
+            this.parent = parent;
+        }
+        public int getWidth(){
+            return 0;
+        }
+        public void setHeight(int newHeight){
+            this.height = newHeight;
+        }
+        public int getHeight(){
+            return this.height + (heightPadding * 2);
+        }
+        @Override
+        public void render(MatrixStack stack, int index, int y0, int x0, int rowWidth, int rowHeight, int xMouse, int yMouse, boolean isMouseOver, float partialTicks
+        ) {
+            this.isMouseOver = xMouse >= x0 && xMouse <= (x0 + rowWidth) && yMouse >= y0 && yMouse <= (y0 + rowHeight);
+        }
+
+        @Override
+        public boolean isMouseOver(double xMouse, double yMouse) {
+            return this.isMouseOver;
         }
     }
 }
