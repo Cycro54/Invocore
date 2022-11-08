@@ -419,14 +419,11 @@ public class ClientUtil {
         }
     }
 
-    public class SimpleList extends AbstractList<ListEntry> {
+    public static class SimpleList extends AbstractList<ListEntry> {
         public final List<ITextComponent> toolTip = new ArrayList<>();
         Image background;
         int screenWidth;
         int screenHeight;
-        
-        protected boolean sellMode = false;
-        protected int sellIndex = -1;
         protected ListEntry hoverEntry = null;
 
 
@@ -441,6 +438,7 @@ public class ClientUtil {
             this.setRenderHeader(false, 0);
             this.screenWidth = screenWidth;
             this.screenHeight = screenHeight;
+            this.background = background;
 
             LOGGER.debug("WHATS MY X0: " + x0);
             LOGGER.debug("WHATS MY WIDTH: " + width);
@@ -469,14 +467,16 @@ public class ClientUtil {
 
         @Override
         public void render(MatrixStack stack, int xMouse, int yMouse, float partialTicks) {
+            if (this.getEventListeners().isEmpty()) return;
+
             super.render(stack, xMouse, yMouse, partialTicks);
 
-            ClientUtil.endCrop();
+            ClientUtil.beginCrop(this.x0, this.x1 - this.x0, this.y0, this.y1 - this.y0, true);
             if (!toolTip.isEmpty()){
                 GuiUtils.drawHoveringText(stack, this.toolTip, xMouse, yMouse, screenWidth, screenHeight,-1,mC.fontRenderer);
                 this.toolTip.clear();
             }
-            ClientUtil.beginCrop(background.x0, background.getWidth(), background.y0 + 5, background.getHeight(), true);
+            ClientUtil.endCrop();
         }
 
 //        protected int getRowTop(int p_230962_1_) {
@@ -574,7 +574,7 @@ public class ClientUtil {
         }
     }
 
-    public class ListEntry extends AbstractList.AbstractListEntry<ListEntry> {
+    public static class ListEntry extends AbstractList.AbstractListEntry<ListEntry> {
         protected SimpleList parent;
         protected int height = 0;
         protected int heightPadding = 1;
