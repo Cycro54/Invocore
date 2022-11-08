@@ -579,8 +579,9 @@ public class ClientUtil {
         protected int height = 0;
         protected int heightPadding = 1;
         protected boolean isMouseOver = false;
-        public ListEntry(SimpleList parent){
+        public ListEntry(SimpleList parent, int height){
             this.parent = parent;
+            this.setHeight(height);
         }
         public int getWidth(){
             return 0;
