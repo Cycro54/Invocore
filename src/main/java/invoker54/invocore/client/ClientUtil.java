@@ -382,11 +382,11 @@ public class ClientUtil {
             this.actualHeight = this.origHeight;
         }
 
-        public static int centerOnImageX(Image image, int targWidth){
-            return image.x0 + ((image.actualWidth - targWidth)/2);
+        public int centerOnImageX(int targWidth){
+            return this.x0 + ((this.actualWidth - targWidth)/2);
         }
-        public static int centerOnImageY(Image image, int targHeight){
-            return image.y0 + ((image.actualHeight - targHeight)/2);
+        public int centerOnImageY(int targHeight){
+            return this.y0 + ((this.actualHeight - targHeight)/2);
         }
         public void centerImageX(int x0, int width){
 //            LOGGER.debug("THIS IS MY OLD X ORIGIN: " + this.x0);
@@ -407,6 +407,8 @@ public class ClientUtil {
         public int getHeight(){
             return this.actualHeight;
         }
+        public int getRight(){return this.x0 + this.getWidth();}
+        public int getDown(){return this.y0 + this.getHeight();}
 
         public void moveTo(int x0, int y0){
             this.x0 = x0;
