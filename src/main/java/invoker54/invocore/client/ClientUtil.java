@@ -338,6 +338,17 @@ public class ClientUtil {
         return formattedNumber.length()>4 ?  formattedNumber.replaceAll("\\.[0-9]+", "") : formattedNumber;
     }
 
+    public static void drawStretchText(MatrixStack stack, String text, float currSize, int targSize, int x, int y, int color, boolean shadow){
+        stack.push();
+        float newScale = targSize/currSize;
+        stack.scale(newScale,newScale,newScale);
+
+        if (shadow) ClientUtil.mC.fontRenderer.drawStringWithShadow(stack, text, x, y, color);
+        else ClientUtil.mC.fontRenderer.drawString(stack, text, x, y, color);
+
+        stack.pop();
+    }
+
     public static class Image {
 
         protected ResourceLocation location;
