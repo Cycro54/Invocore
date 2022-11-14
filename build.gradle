@@ -4,7 +4,7 @@ plugins {
 
 
 group = 'invoker54'
-version = '1.3.1'
+version = '1.3.2'
 
 java {
     archivesBaseName = 'invocore-1.16.5'

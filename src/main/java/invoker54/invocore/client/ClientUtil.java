@@ -343,6 +343,10 @@ public class ClientUtil {
         float newScale = targSize/currSize;
         stack.scale(newScale,newScale,newScale);
 
+        //Must divide the position by the newScale due to the new difference
+        x = Math.round(x/newScale);
+        y = Math.round(y/newScale);
+
         if (shadow) ClientUtil.mC.fontRenderer.drawStringWithShadow(stack, text, x, y, color);
         else ClientUtil.mC.fontRenderer.drawString(stack, text, x, y, color);
 
