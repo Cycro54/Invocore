@@ -13,12 +13,14 @@ import net.minecraft.client.renderer.WorldVertexBufferUploader;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.Matrix4f;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.client.gui.GuiUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -163,7 +165,12 @@ public class ClientUtil {
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
-
+    public static PlayerEntity getPlayer() {
+        return ClientUtil.mC.player;
+    }
+    public static World getWorld(){
+        return ClientUtil.mC.world;
+    }
     public static Vector3d smoothLerp(Vector3d oldPos, Vector3d newPos, boolean useDelta){
 //        LOGGER.debug("PARTIAL TICK IN CLIENT UTIL IS: " + ClientUtil.mC.getFrameTime());
         return new Vector3d(
@@ -335,7 +342,7 @@ public class ClientUtil {
         value = value/(Math.pow(10,(power/3)*3));
         formattedNumber=formatter.format(value);
         formattedNumber = formattedNumber + suffix.charAt(power/3);
-        return formattedNumber.length()>4 ?  formattedNumber.replaceAll("\\.[0-9]+", "") : formattedNumber;
+        return formattedNumber.length()>4 ?  formattedNumber.replaceAll("\\.[0-9]+ ", "") : formattedNumber;
     }
 
     public static void drawStretchText(MatrixStack stack, String text, float currSize, int targSize, int x, int y, int color, boolean shadow){
