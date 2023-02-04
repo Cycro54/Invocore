@@ -345,6 +345,7 @@ public class ClientUtil {
         return formattedNumber.length()>4 ?  formattedNumber.replaceAll("\\.[0-9]+ ", "") : formattedNumber;
     }
 
+    @Deprecated
     public static void drawStretchText(MatrixStack stack, String text, float currSize, int targSize, int x, int y, int color, boolean shadow){
         stack.push();
         float newScale = targSize/currSize;
