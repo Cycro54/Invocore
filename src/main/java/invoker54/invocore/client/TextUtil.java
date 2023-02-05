@@ -1,12 +1,12 @@
 package invoker54.invocore.client;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.IRenderTypeBuffer;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.util.math.vector.Matrix4f;
-import net.minecraft.util.text.ITextComponent;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.math.Matrix4f;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.network.chat.Component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,19 +26,18 @@ public class TextUtil {
         RIGHT
     }
 
-    public static void renderText(MatrixStack stack, ITextComponent text, boolean shadow,
+    public static void renderText(PoseStack stack, Component text, boolean shadow,
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
-        java.util.List<ITextComponent> list = new ArrayList<>();
+        java.util.List<Component> list = new ArrayList<>();
         list.add(text);
         renderText(stack, list, shadow, x0, maxWidth, y0, maxHeight, padding, align);
     }
-    public static void renderText(MatrixStack stack, List<ITextComponent> textLines, boolean shadow,
+    public static void renderText(PoseStack stack, List<Component> textLines, boolean shadow,
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
-        FontRenderer font = mC.fontRenderer;
+        Font font = mC.font;
 
-        stack.push();
+        stack.pushPose();
 
-        RenderSystem.disableRescaleNormal();
         RenderSystem.disableDepthTest();
 
         float maxTxtHeight = textLines.size() * (7 + 1);
@@ -48,8 +47,8 @@ public class TextUtil {
 //        LOGGER.info("After padding it is " + maxTxtHeight);
 
         float maxTxtWidth = 0;
-        for (ITextComponent textComponent : textLines){
-            int currentWidth = font.getStringWidth(textComponent.getString());
+        for (Component textComponent : textLines){
+            int currentWidth = font.width(textComponent.getString());
             if (currentWidth > maxTxtWidth){
                 maxTxtWidth = currentWidth;
             }
@@ -88,10 +87,10 @@ public class TextUtil {
 //        maxTxtHeight = (maxTxtHeight/scaleFactor);
 
         for (int a = 0; a < textLines.size(); ++a){
-            ITextComponent currText = textLines.get(a);
+            Component currText = textLines.get(a);
 
             float y = y0/scaleFactor;
-            y = y + ((((maxHeight - (maxTxtHeight * scaleFactor))/2F) + (a * font.FONT_HEIGHT * scaleFactor))/scaleFactor);
+            y = y + ((((maxHeight - (maxTxtHeight * scaleFactor))/2F) + (a * font.lineHeight * scaleFactor))/scaleFactor);
 //            LOGGER.debug("max height is: "+ maxHeight);
 //            LOGGER.debug("base empty space is: " + (maxHeight - (maxTxtHeight * scaleFactor)));
 //            LOGGER.debug("resulting y spot is: " + (((maxHeight - (maxTxtHeight * scaleFactor))/2F) + (a * font.lineHeight * scaleFactor)));
@@ -107,14 +106,14 @@ public class TextUtil {
                     x = (x + padding)/scaleFactor;
                     break;
                 case MIDDLE:
-                    x = x + (((maxWidth - ((font.getStringPropertyWidth(currText) - 1) * scaleFactor))/2F)/scaleFactor);
+                    x = x + (((maxWidth - ((font.width(currText) - 1) * scaleFactor))/2F)/scaleFactor);
 //                    LOGGER.debug("Max Width: " + (maxWidth));
 //                    LOGGER.debug("Font Width is now: " + (font.getStringWidth(currText) * scaleFactor));
 //                    LOGGER.debug("What's the empty space: " + ((maxWidth) - (font.getStringWidth(currText) * scaleFactor)));
 //                    LOGGER.debug("Where will the top left be for the text: " + x);
                     break;
                 case RIGHT:
-                    x = (((x + maxWidth)/scaleFactor) - ((padding/scaleFactor) + (font.getStringPropertyWidth(currText) * scaleFactor)));
+                    x = (((x + maxWidth)/scaleFactor) - ((padding/scaleFactor) + (font.width(currText) * scaleFactor)));
                     break;
             }
 
@@ -122,35 +121,34 @@ public class TextUtil {
         }
 
         RenderSystem.enableDepthTest();
-        RenderSystem.enableRescaleNormal();
 
-        stack.pop();
+        stack.popPose();
     }
 
-    public static void renderText(ITextComponent text, MatrixStack stack, float x, float y, boolean shadow){
+    public static void renderText(Component text, PoseStack stack, float x, float y, boolean shadow){
         RenderSystem.disableDepthTest();
-        IRenderTypeBuffer.Impl irendertypebuffer$impl = IRenderTypeBuffer.getImpl(Tessellator.getInstance().getBuffer());
+        MultiBufferSource.BufferSource irendertypebuffer$impl = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
 
 //        boolean flag = !player.isDiscrete();
 //        float f = player.getBbHeight() * 0.5f;
         int i = "deadmau5".equals(text.getString()) ? -10 : 0;
-        Matrix4f matrix4f = stack.getLast().getMatrix();
+        Matrix4f matrix4f = stack.last().pose();
 
         //This is the usual number, so let's keep it like that for now
         int lightCoords = 15728880;
 
         //float f1 = Minecraft.getInstance().options.getBackgroundOpacity(0.25F);
         int j = (int)(0 * 255.0F) << 24;
-        FontRenderer fontrenderer = mC.fontRenderer;
+        Font fontrenderer = mC.font;
 
-        fontrenderer.func_243247_a(text, x, y, -1, shadow, matrix4f, irendertypebuffer$impl, true, 0, lightCoords);
+        fontrenderer.drawInBatch(text, x, y, -1, shadow, matrix4f, irendertypebuffer$impl, true, 0, lightCoords);
 
 //        fontrenderer.drawInBatch(text, x, y, -1, shadow, matrix4f, irendertypebuffer$impl, true, j, lightCoords);
 //        if (flag) {
 //            fontrenderer.drawInBatch(text.getVisualOrderText(), x, y, -1, shadow, matrix4f, irendertypebuffer$impl, false, 0, lightcoords);
 //        }
 
-        irendertypebuffer$impl.finish();
+        irendertypebuffer$impl.endBatch();
         RenderSystem.enableDepthTest();
     }
 }

@@ -27,10 +27,10 @@ public class InputEvents {
 
     private static void onInput(int action, int key){
         //LOGGER.debug("Is there a world?? " + (ClientUtil.mC.level == null));
-        if (ClientUtil.mC.world == null) return;
+        if (ClientUtil.mC.level == null) return;
 
         for (CustomKeybind cKeyBind : KeybindsInit.gearBinds){
-            if (cKeyBind.keyBind.getKey().getKeyCode() == key){
+            if (cKeyBind.keyBind.getKey().getValue() == key){
                 cKeyBind.pressed(action);
             }
         }

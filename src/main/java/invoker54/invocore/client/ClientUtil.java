@@ -1,27 +1,23 @@
 package invoker54.invocore.client;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.*;
+import com.mojang.math.Matrix4f;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.widget.button.Button;
-import net.minecraft.client.gui.widget.list.AbstractList;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.ItemRenderer;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.WorldVertexBufferUploader;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.components.AbstractSelectionList;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.vector.Matrix4f;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.text.IFormattableTextComponent;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.world.World;
-import net.minecraftforge.fml.client.gui.GuiUtils;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,85 +37,85 @@ public class ClientUtil {
     private static final Logger LOGGER = LogManager.getLogger();
 
     //This will face the player dependent on the players position, NOT camera orientation.
-    public static void drawWorldLine(MatrixStack stack, Vector3d origin, Vector3d target, float lineWidth, int color){
-        stack.push();
-        Vector3d cam = mC.gameRenderer.getActiveRenderInfo().getProjectedView().inverse();
-        stack.translate(cam.getX(), cam.getY(), cam.getZ());
-        cam = cam.inverse();
-        Matrix4f lastPos = stack.getLast().getMatrix();
+    public static void drawWorldLine(PoseStack stack, Vec3 origin, Vec3 target, float lineWidth, int color){
+        stack.pushPose();
+        Vec3 cam = mC.gameRenderer.getMainCamera().getPosition().reverse();
+        stack.translate(cam.x(), cam.y(), cam.z());
+        cam = cam.reverse();
+        Matrix4f lastPos = stack.last().pose();
 
         float f3 = (float)(color >> 24 & 255) / 255.0F;
         float f = (float)(color >> 16 & 255) / 255.0F;
         float f1 = (float)(color >> 8 & 255) / 255.0F;
         float f2 = (float)(color & 255) / 255.0F;
         //This gives me the up/down vector of the plane
-        Vector3d directionVector = target.subtractReverse(cam).crossProduct(origin.subtractReverse(cam)).normalize();
+        Vec3 directionVector = target.vectorTo(cam).cross(origin.vectorTo(cam)).normalize();
 
-        Vector3d originUP = origin.add(directionVector.scale(lineWidth/2F));
-        Vector3d originDOWN = origin.add(directionVector.scale(-lineWidth/2F));
-        Vector3d targetUP = target.add(directionVector.scale(lineWidth/2F));
-        Vector3d targetDOWN = target.add(directionVector.scale(-lineWidth/2F));
+        Vec3 originUP = origin.add(directionVector.scale(lineWidth/2F));
+        Vec3 originDOWN = origin.add(directionVector.scale(-lineWidth/2F));
+        Vec3 targetUP = target.add(directionVector.scale(lineWidth/2F));
+        Vec3 targetDOWN = target.add(directionVector.scale(-lineWidth/2F));
 
-        BufferBuilder bufferbuilder = Tessellator.getInstance().getBuffer();
+        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
         RenderSystem.disableCull();
         RenderSystem.enableDepthTest();
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
-        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_COLOR);
-        bufferbuilder.pos(lastPos, (float) originUP.getX(), (float) originUP.getY(), (float) originUP.getZ()).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.pos(lastPos, (float)targetUP.getX(), (float)targetUP.getY(), (float)targetUP.getZ()).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.pos(lastPos, (float)targetDOWN.getX(), (float)targetDOWN.getY(), (float)targetDOWN.getZ()).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.pos(lastPos, (float)originDOWN.getX(), (float)originDOWN.getY(), (float)originDOWN.getZ()).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.finishDrawing();
-        WorldVertexBufferUploader.draw(bufferbuilder);
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        bufferbuilder.vertex(lastPos, (float) originUP.x(), (float) originUP.y(), (float) originUP.z()).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.vertex(lastPos, (float)targetUP.x(), (float)targetUP.y(), (float)targetUP.z()).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.vertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.vertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.end();
+        BufferUploader.end(bufferbuilder);
         RenderSystem.enableDepthTest();
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
         RenderSystem.enableCull();
-        stack.pop();
+        stack.popPose();
     }
-    public static void drawWorldLine(MatrixStack stack, Vector3d origin, Vector3d target, float lineWidth, float u0, float imageWidth, float v0, float imageHeight, float imageScale){
-        stack.push();
-        Vector3d cam = mC.gameRenderer.getActiveRenderInfo().getProjectedView().inverse();
+    public static void drawWorldLine(PoseStack stack, Vec3 origin, Vec3 target, float lineWidth, float u0, float imageWidth, float v0, float imageHeight, float imageScale){
+        stack.pushPose();
+        Vec3 cam = mC.gameRenderer.getMainCamera().getPosition().reverse();
 //        Vector3d cam = mC.player.position().inverse();
-        stack.translate(cam.getX(), cam.getY(), cam.getZ());
-        cam = cam.inverse();
-        Matrix4f lastPos = stack.getLast().getMatrix();
+        stack.translate(cam.x(), cam.y(), cam.z());
+        cam = cam.reverse();
+        Matrix4f lastPos = stack.last().pose();
 
         u0 /= imageScale;
         float u1 = u0 + (imageWidth/imageScale);
         v0 /= imageScale;
         float v1 = v0 + (imageHeight/imageScale);
         //This gives me the up/down vector of the plane
-        Vector3d directionVector = target.subtractReverse(cam).crossProduct(origin.subtractReverse(cam)).normalize();
+        Vec3 directionVector = target.vectorTo(cam).cross(origin.vectorTo(cam)).normalize();
 
-        Vector3d originUP = origin.add(directionVector.scale(lineWidth/2F));
-        Vector3d originDOWN = origin.add(directionVector.scale(-lineWidth/2F));
-        Vector3d targetUP = target.add(directionVector.scale(lineWidth/2F));
-        Vector3d targetDOWN = target.add(directionVector.scale(-lineWidth/2F));
+        Vec3 originUP = origin.add(directionVector.scale(lineWidth/2F));
+        Vec3 originDOWN = origin.add(directionVector.scale(-lineWidth/2F));
+        Vec3 targetUP = target.add(directionVector.scale(lineWidth/2F));
+        Vec3 targetDOWN = target.add(directionVector.scale(-lineWidth/2F));
 
-        BufferBuilder bufferbuilder = Tessellator.getInstance().getBuffer();
+        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
         RenderSystem.disableCull();
         RenderSystem.enableDepthTest();
         RenderSystem.enableBlend();
         RenderSystem.enableTexture();
         RenderSystem.defaultBlendFunc();
-        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
-        bufferbuilder.pos(lastPos, (float) originUP.getX(), (float) originUP.getY(), (float) originUP.getZ()).tex(u0, v0).endVertex();
-        bufferbuilder.pos(lastPos, (float)targetUP.getX(), (float)targetUP.getY(), (float)targetUP.getZ()).tex(u1, v0).endVertex();
-        bufferbuilder.pos(lastPos, (float)targetDOWN.getX(), (float)targetDOWN.getY(), (float)targetDOWN.getZ()).tex(u1, v1).endVertex();
-        bufferbuilder.pos(lastPos, (float)originDOWN.getX(), (float)originDOWN.getY(), (float)originDOWN.getZ()).tex(u0, v1).endVertex();
-        bufferbuilder.finishDrawing();
-        WorldVertexBufferUploader.draw(bufferbuilder);
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        bufferbuilder.vertex(lastPos, (float) originUP.x(), (float) originUP.y(), (float) originUP.z()).uv(u0, v0).endVertex();
+        bufferbuilder.vertex(lastPos, (float)targetUP.x(), (float)targetUP.y(), (float)targetUP.z()).uv(u1, v0).endVertex();
+        bufferbuilder.vertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).uv(u1, v1).endVertex();
+        bufferbuilder.vertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).uv(u0, v1).endVertex();
+        bufferbuilder.end();
+        BufferUploader.end(bufferbuilder);
         RenderSystem.enableDepthTest();
         RenderSystem.disableTexture();
         RenderSystem.disableBlend();
         RenderSystem.enableCull();
-        stack.pop();
+        stack.popPose();
     }
-    public static void blitImage(MatrixStack stack, int x0, int width, int y0, int height, float u0, float imageWidth, float v0, float imageHeight, float imageScale){
-        Matrix4f lastPos = stack.getLast().getMatrix();
+    public static void blitImage(PoseStack stack, int x0, int width, int y0, int height, float u0, float imageWidth, float v0, float imageHeight, float imageScale){
+        Matrix4f lastPos = stack.last().pose();
         int x1 = x0 + width;
         int y1 = y0 + height;
         u0 /= imageScale;
@@ -131,18 +127,18 @@ public class ClientUtil {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
-        BufferBuilder bufferbuilder = Tessellator.getInstance().getBuffer();
-        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
-        bufferbuilder.pos(lastPos, (float)x0, (float)y1, (float)0).tex(u0, v1).endVertex();
-        bufferbuilder.pos(lastPos, (float)x1, (float)y1, (float)0).tex(u1, v1).endVertex();
-        bufferbuilder.pos(lastPos, (float)x1, (float)y0, (float)0).tex(u1, v0).endVertex();
-        bufferbuilder.pos(lastPos, (float)x0, (float)y0, (float)0).tex(u0, v0).endVertex();
-        bufferbuilder.finishDrawing();
-        WorldVertexBufferUploader.draw(bufferbuilder);
+        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        bufferbuilder.vertex(lastPos, (float)x0, (float)y1, (float)0).uv(u0, v1).endVertex();
+        bufferbuilder.vertex(lastPos, (float)x1, (float)y1, (float)0).uv(u1, v1).endVertex();
+        bufferbuilder.vertex(lastPos, (float)x1, (float)y0, (float)0).uv(u1, v0).endVertex();
+        bufferbuilder.vertex(lastPos, (float)x0, (float)y0, (float)0).uv(u0, v0).endVertex();
+        bufferbuilder.end();
+        BufferUploader.end(bufferbuilder);
         RenderSystem.enableDepthTest();
     }
-    public static void blitColor(MatrixStack stack, int x0, int width, int y0, int height, int color){
-        Matrix4f lastPos = stack.getLast().getMatrix();
+    public static void blitColor(PoseStack stack, int x0, int width, int y0, int height, int color){
+        Matrix4f lastPos = stack.last().pose();
         int x1 = x0 + width;
         int y1 = y0 + height;
 
@@ -151,50 +147,50 @@ public class ClientUtil {
         float f1 = (float)(color >> 8 & 255) / 255.0F;
         float f2 = (float)(color & 255) / 255.0F;
 
-        BufferBuilder bufferbuilder = Tessellator.getInstance().getBuffer();
+        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
-        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_COLOR);
-        bufferbuilder.pos(lastPos, (float)x0, (float)y1, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.pos(lastPos, (float)x1, (float)y1, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.pos(lastPos, (float)x1, (float)y0, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.pos(lastPos, (float)x0, (float)y0, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.finishDrawing();
-        WorldVertexBufferUploader.draw(bufferbuilder);
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        bufferbuilder.vertex(lastPos, (float)x0, (float)y1, (float)0).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.vertex(lastPos, (float)x1, (float)y1, (float)0).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.vertex(lastPos, (float)x1, (float)y0, (float)0).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.vertex(lastPos, (float)x0, (float)y0, (float)0).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.end();
+        BufferUploader.end(bufferbuilder);
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
-    public static PlayerEntity getPlayer() {
+    public static Player getPlayer() {
         return ClientUtil.mC.player;
     }
-    public static World getWorld(){
-        return ClientUtil.mC.world;
+    public static Level getWorld(){
+        return ClientUtil.mC.level;
     }
-    public static Vector3d smoothLerp(Vector3d oldPos, Vector3d newPos, boolean useDelta){
+    public static Vec3 smoothLerp(Vec3 oldPos, Vec3 newPos, boolean useDelta){
 //        LOGGER.debug("PARTIAL TICK IN CLIENT UTIL IS: " + ClientUtil.mC.getFrameTime());
-        return new Vector3d(
+        return new Vec3(
                 smoothLerp(oldPos.x, newPos.x, useDelta),
                 smoothLerp(oldPos.y, newPos.y, useDelta),
                 smoothLerp(oldPos.z, newPos.z, useDelta));
     }
     public static double smoothLerp(double oldDouble, double newDouble, boolean useDelta){
-        return MathHelper.lerp(useDelta ? Ticker.getDelta(true,true) : ClientUtil.mC.getRenderPartialTicks(),oldDouble,newDouble);
+        return Mth.lerp(useDelta ? Ticker.getDelta(true,true) : ClientUtil.mC.getFrameTime(),oldDouble,newDouble);
     }
 
     public static void copyEntityMovement(LivingEntity copier, LivingEntity toCopy){
-        copier.moveForced(toCopy.getPositionVec());
-        copier.prevPosX = toCopy.prevPosX;
-        copier.lastTickPosX = toCopy.lastTickPosX;
-        copier.prevPosY = toCopy.prevPosY;
-        copier.lastTickPosY = toCopy.lastTickPosY;
-        copier.prevPosZ = toCopy.prevPosZ;
-        copier.lastTickPosZ = toCopy.lastTickPosZ;
-        copier.setMotion(toCopy.getMotion());
-        copier.setRotationYawHead(toCopy.getRotationYawHead());
-        copier.prevRotationYawHead = toCopy.prevRotationYawHead;
-        copier.setRenderYawOffset(toCopy.renderYawOffset);
-        copier.prevRenderYawOffset = toCopy.prevRenderYawOffset;
+        copier.moveTo(toCopy.position());
+        copier.xo = toCopy.xo;
+        copier.xOld = toCopy.xOld;
+        copier.yo = toCopy.yo;
+        copier.yOld = toCopy.yOld;
+        copier.zo = toCopy.zo;
+        copier.zOld = toCopy.zOld;
+        copier.setDeltaMovement(toCopy.getDeltaMovement());
+        copier.setYHeadRot(toCopy.getYHeadRot());
+        copier.yHeadRotO = toCopy.yHeadRotO;
+        copier.setYBodyRot(toCopy.yBodyRot);
+        copier.yBodyRotO = toCopy.yBodyRotO;
     }
 
     public static boolean inBounds (float xSpot, float ySpot, Bounds bounds){
@@ -211,8 +207,8 @@ public class ClientUtil {
 //        XPShop.LOGGER.debug((String.valueOf(width)) + (bounds.x1 - bounds.x0));
 //        XPShop.LOGGER.debug((String.valueOf(y)) + (bounds.y0));
 //        XPShop.LOGGER.debug((String.valueOf(height)) + (bounds.y1 - bounds.y0));
-        double scale = mC.getMainWindow().getGuiScaleFactor();
-        int windowHeight = mC.getMainWindow().getScaledHeight();
+        double scale = mC.getWindow().getGuiScale();
+        int windowHeight = mC.getWindow().getGuiScaledHeight();
 
         //This is inverses y since scissor test requires it
         y = windowHeight - (height + y);
@@ -284,18 +280,18 @@ public class ClientUtil {
 
         public boolean hidden = false;
 
-        public SimpleButton(int x, int y, int width, int height, ITextComponent textComponent, IPressable onPress) {
+        public SimpleButton(int x, int y, int width, int height, Component textComponent, OnPress onPress) {
             super(x, y, width, height, textComponent, onPress);
             this.visible = true;
         }
 
         @Override
-        public void renderWidget(MatrixStack stack, int xMouse, int yMouse, float partialTicks) {
+        public void renderButton(PoseStack stack, int xMouse, int yMouse, float partialTicks) {
             if (hidden) return;
 
-            FontRenderer fontrenderer = mC.fontRenderer;
-            TEXTURE_MANAGER.bindTexture(WIDGETS_LOCATION);
-            int i = this.getYImage(this.isHovered());
+            Font fontrenderer = mC.font;
+            TEXTURE_MANAGER.bindForSetup(WIDGETS_LOCATION);
+            int i = this.getYImage(this.isHovered);
             i = 46 + i * 20;
 
             //left part of the button
@@ -311,7 +307,7 @@ public class ClientUtil {
 //            this.blit(stack, this.x + this.width / 2, this.y, 200 - this.width / 2, 46 + i * 20, this.width / 2, this.height);
 
             int j = getFGColor();
-            drawCenteredString(stack, fontrenderer, this.getMessage(), this.x + this.width / 2, this.y + (this.height - 8) / 2, j | MathHelper.ceil(this.alpha * 255.0F) << 24);
+            drawCenteredString(stack, fontrenderer, this.getMessage(), this.x + this.width / 2, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0F) << 24);
         }
     }
     public static String ticksToTime(int ticks){
@@ -346,8 +342,8 @@ public class ClientUtil {
     }
 
     @Deprecated
-    public static void drawStretchText(MatrixStack stack, String text, float currSize, int targSize, int x, int y, int color, boolean shadow){
-        stack.push();
+    public static void drawStretchText(PoseStack stack, String text, float currSize, int targSize, int x, int y, int color, boolean shadow){
+        stack.pushPose();
         float newScale = targSize/currSize;
         stack.scale(newScale,newScale,newScale);
 
@@ -355,10 +351,10 @@ public class ClientUtil {
         x = Math.round(x/newScale);
         y = Math.round(y/newScale);
 
-        if (shadow) ClientUtil.mC.fontRenderer.drawStringWithShadow(stack, text, x, y, color);
-        else ClientUtil.mC.fontRenderer.drawString(stack, text, x, y, color);
+        if (shadow) ClientUtil.mC.font.drawShadow(stack, text, x, y, color);
+        else ClientUtil.mC.font.draw(stack, text, x, y, color);
 
-        stack.pop();
+        stack.popPose();
     }
 
     public static class Image {
@@ -437,15 +433,15 @@ public class ClientUtil {
             this.actualHeight = actualHeight;
         }
 
-        public void RenderImage(MatrixStack stack){
-            TEXTURE_MANAGER.bindTexture(this.location);
+        public void RenderImage(PoseStack stack){
+            TEXTURE_MANAGER.bindForSetup(this.location);
             blitImage(stack, x0, actualWidth, y0, actualHeight, u0, imageWidth, v0, imageHeight, scale);
-            TEXTURE_MANAGER.deleteTexture(this.location);
+            TEXTURE_MANAGER.release(this.location);
         }
     }
 
-    public static class SimpleList extends AbstractList<ListEntry> {
-        public final List<ITextComponent> toolTip = new ArrayList<>();
+    public static class SimpleList extends AbstractSelectionList<ListEntry> {
+        public final List<Component> toolTip = new ArrayList<>();
         Image background;
         int screenWidth;
         int screenHeight;
@@ -458,8 +454,8 @@ public class ClientUtil {
             super(ClientUtil.mC, width, 0, y0, y0 + height, 30);
             this.x0 = x0;
             this.x1 = x0 + width;
-            this.func_244605_b(false);
-            this.func_244606_c(false);
+            this.setRenderBackground(false);
+            this.setRenderTopAndBottom(false);
             this.setRenderHeader(false, 0);
             this.screenWidth = screenWidth;
             this.screenHeight = screenHeight;
@@ -474,7 +470,7 @@ public class ClientUtil {
         public void recalcWidth(){
             int width = 0;
 
-            for (ListEntry entry : this.getEventListeners()){
+            for (ListEntry entry : this.children()){
                 if (entry.getWidth() > width){
                     width = entry.getWidth();
                 }
@@ -489,16 +485,16 @@ public class ClientUtil {
             this.y0 = y0;
             this.y1 = y0 + height;
         }
-
         @Override
-        public void render(MatrixStack stack, int xMouse, int yMouse, float partialTicks) {
-            if (this.getEventListeners().isEmpty()) return;
+        public void render(PoseStack stack, int xMouse, int yMouse, float partialTicks) {
+            ItemStack f;
+            if (this.children().isEmpty()) return;
 
             super.render(stack, xMouse, yMouse, partialTicks);
 
             ClientUtil.beginCrop(this.x0, this.x1 - this.x0, this.y0, this.y1 - this.y0, true);
-            if (!toolTip.isEmpty()){
-                GuiUtils.drawHoveringText(stack, this.toolTip, xMouse, yMouse, screenWidth, screenHeight,-1,mC.fontRenderer);
+            if (!toolTip.isEmpty() && ClientUtil.mC.screen != null) {
+                ClientUtil.mC.screen.renderComponentTooltip(stack, this.toolTip, xMouse, yMouse);
                 this.toolTip.clear();
             }
             ClientUtil.endCrop();
@@ -509,7 +505,7 @@ public class ClientUtil {
 //        }
 
         @Override
-        protected void renderList(MatrixStack stack, int p_238478_2_, int p_238478_3_, int xMouse, int yMouse, float p_238478_6_) {
+        protected void renderList(PoseStack stack, int p_238478_2_, int p_238478_3_, int xMouse, int yMouse, float p_238478_6_) {
             int i = this.getItemCount();
             hoverEntry = null;
 //            Tessellator tessellator = Tessellator.getInstance();
@@ -585,7 +581,7 @@ public class ClientUtil {
             } else {
                 if (hoverEntry != null) {
                     if (hoverEntry.mouseClicked(xMouse, yMouse, button)) {
-                        this.setListener(hoverEntry);
+                        this.setFocused(hoverEntry);
                         this.setDragging(true);
                         return true;
                     }
@@ -597,9 +593,14 @@ public class ClientUtil {
                 return false;
             }
         }
+
+        @Override
+        public void updateNarration(NarrationElementOutput p_169152_) {
+
+        }
     }
 
-    public static class ListEntry extends AbstractList.AbstractListEntry<ListEntry> {
+    public static class ListEntry extends AbstractSelectionList.Entry<ListEntry> {
         protected SimpleList parent;
         protected int height = 0;
         protected int heightPadding = 1;
@@ -618,7 +619,7 @@ public class ClientUtil {
             return this.height + (heightPadding * 2);
         }
         @Override
-        public void render(MatrixStack stack, int index, int y0, int x0, int rowWidth, int rowHeight, int xMouse, int yMouse, boolean isMouseOver, float partialTicks
+        public void render(PoseStack stack, int index, int y0, int x0, int rowWidth, int rowHeight, int xMouse, int yMouse, boolean isMouseOver, float partialTicks
         ) {
             this.isMouseOver = xMouse >= x0 && xMouse <= (x0 + rowWidth) && yMouse >= y0 && yMouse <= (y0 + rowHeight);
         }

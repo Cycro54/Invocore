@@ -1,7 +1,6 @@
 package invoker54.invocore.client;
 
 import invoker54.invocore.Invocore;
-import invoker54.invocore.client.ClientUtil;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -44,6 +43,6 @@ public class Ticker {
 
     //returns how much actual time has passed (in ticks)
     public static float getDelta(boolean canPause, boolean inTicks){
-        return (canPause ? (ClientUtil.mC.isGamePaused() ? 0 : delta) : delta)/(inTicks ? 1 : 20);
+        return (canPause ? (ClientUtil.mC.isPaused() ? 0 : delta) : delta)/(inTicks ? 1 : 20);
     }
 }
