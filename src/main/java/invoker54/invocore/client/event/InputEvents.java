@@ -16,12 +16,12 @@ public class InputEvents {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @SubscribeEvent
-    public static void onKeyPress(InputEvent.KeyInputEvent event){
+    public static void onKeyPress(InputEvent.Key event){
         onInput(event.getAction(), event.getKey());
     }
 
     @SubscribeEvent
-    public static void onMousePress(InputEvent.MouseInputEvent event){
+    public static void onMousePress(InputEvent.MouseButton event){
         onInput(event.getAction(), event.getButton());
     }
 
