@@ -28,6 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import net.minecraft.client.gui.components.Button.OnPress;
+import org.jetbrains.annotations.NotNull;
+
 public class ClientUtil {
     public static final Minecraft mC = Minecraft.getInstance();
     public static final TextureManager TEXTURE_MANAGER = Minecraft.getInstance().textureManager;
@@ -67,8 +70,7 @@ public class ClientUtil {
         bufferbuilder.vertex(lastPos, (float)targetUP.x(), (float)targetUP.y(), (float)targetUP.z()).color(f, f1, f2, f3).endVertex();
         bufferbuilder.vertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).color(f, f1, f2, f3).endVertex();
         bufferbuilder.vertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.end();
-        BufferUploader.end(bufferbuilder);
+        BufferUploader.draw(bufferbuilder.end());
         RenderSystem.enableDepthTest();
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
@@ -106,8 +108,7 @@ public class ClientUtil {
         bufferbuilder.vertex(lastPos, (float)targetUP.x(), (float)targetUP.y(), (float)targetUP.z()).uv(u1, v0).endVertex();
         bufferbuilder.vertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).uv(u1, v1).endVertex();
         bufferbuilder.vertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).uv(u0, v1).endVertex();
-        bufferbuilder.end();
-        BufferUploader.end(bufferbuilder);
+        BufferUploader.draw(bufferbuilder.end());
         RenderSystem.enableDepthTest();
         RenderSystem.disableTexture();
         RenderSystem.disableBlend();
@@ -133,8 +134,8 @@ public class ClientUtil {
         bufferbuilder.vertex(lastPos, (float)x1, (float)y1, (float)0).uv(u1, v1).endVertex();
         bufferbuilder.vertex(lastPos, (float)x1, (float)y0, (float)0).uv(u1, v0).endVertex();
         bufferbuilder.vertex(lastPos, (float)x0, (float)y0, (float)0).uv(u0, v0).endVertex();
-        bufferbuilder.end();
-        BufferUploader.end(bufferbuilder);
+        BufferUploader.draw(bufferbuilder.end());
+
         RenderSystem.enableDepthTest();
     }
     public static void blitColor(PoseStack stack, int x0, int width, int y0, int height, int color){
@@ -156,8 +157,8 @@ public class ClientUtil {
         bufferbuilder.vertex(lastPos, (float)x1, (float)y1, (float)0).color(f, f1, f2, f3).endVertex();
         bufferbuilder.vertex(lastPos, (float)x1, (float)y0, (float)0).color(f, f1, f2, f3).endVertex();
         bufferbuilder.vertex(lastPos, (float)x0, (float)y0, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.end();
-        BufferUploader.end(bufferbuilder);
+        BufferUploader.draw(bufferbuilder.end());
+
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
@@ -504,8 +505,10 @@ public class ClientUtil {
 //            return this.y0 + 4 - (int)this.getScrollAmount() + p_230962_1_ * this.itemHeight + this.headerHeight;
 //        }
 
+
+
         @Override
-        protected void renderList(PoseStack stack, int p_238478_2_, int p_238478_3_, int xMouse, int yMouse, float p_238478_6_) {
+        protected void renderList(@NotNull PoseStack stack, int xMouse, int yMouse, float p_238478_6_) {
             int i = this.getItemCount();
             hoverEntry = null;
 //            Tessellator tessellator = Tessellator.getInstance();
