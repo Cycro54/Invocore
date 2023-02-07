@@ -70,7 +70,7 @@ public class ClientUtil {
         bufferbuilder.vertex(lastPos, (float)targetUP.x(), (float)targetUP.y(), (float)targetUP.z()).color(f, f1, f2, f3).endVertex();
         bufferbuilder.vertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).color(f, f1, f2, f3).endVertex();
         bufferbuilder.vertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).color(f, f1, f2, f3).endVertex();
-        BufferUploader.draw(bufferbuilder.end());
+        BufferUploader.drawWithShader(bufferbuilder.end());
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
         RenderSystem.enableCull();
@@ -106,7 +106,7 @@ public class ClientUtil {
         bufferbuilder.vertex(lastPos, (float)targetUP.x(), (float)targetUP.y(), (float)targetUP.z()).uv(u1, v0).endVertex();
         bufferbuilder.vertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).uv(u1, v1).endVertex();
         bufferbuilder.vertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).uv(u0, v1).endVertex();
-        BufferUploader.draw(bufferbuilder.end());
+        BufferUploader.drawWithShader(bufferbuilder.end());
         
         RenderSystem.disableTexture();
         RenderSystem.disableBlend();
@@ -132,7 +132,7 @@ public class ClientUtil {
         bufferbuilder.vertex(lastPos, x1, y1, (float)0).uv(u1, v1).endVertex();
         bufferbuilder.vertex(lastPos, x1, y0, (float)0).uv(u1, v0).endVertex();
         bufferbuilder.vertex(lastPos, x0, y0, (float)0).uv(u0, v0).endVertex();
-        BufferUploader.draw(bufferbuilder.end());
+        BufferUploader.drawWithShader(bufferbuilder.end());
 
         
     }
@@ -158,7 +158,7 @@ public class ClientUtil {
         bufferbuilder.vertex(lastPos, x1, y1, (float)0).color(f, f1, f2, f3).endVertex();
         bufferbuilder.vertex(lastPos, x1, y0, (float)0).color(f, f1, f2, f3).endVertex();
         bufferbuilder.vertex(lastPos, x0, y0, (float)0).color(f, f1, f2, f3).endVertex();
-        BufferUploader.draw(bufferbuilder.end());
+        BufferUploader.drawWithShader(bufferbuilder.end());
 
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
