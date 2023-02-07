@@ -113,10 +113,10 @@ public class ClientUtil {
         RenderSystem.enableCull();
         stack.popPose();
     }
-    public static void blitImage(PoseStack stack, int x0, int width, int y0, int height, float u0, float imageWidth, float v0, float imageHeight, float imageScale){
+    public static void blitImage(PoseStack stack, float x0, float width, float y0, float height, float u0, float imageWidth, float v0, float imageHeight, float imageScale){
         Matrix4f lastPos = stack.last().pose();
-        int x1 = x0 + width;
-        int y1 = y0 + height;
+        float x1 = x0 + width;
+        float y1 = y0 + height;
         u0 /= imageScale;
         float u1 = u0 + (imageWidth/imageScale);
         v0 /= imageScale;
@@ -128,18 +128,18 @@ public class ClientUtil {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
         bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferbuilder.vertex(lastPos, (float)x0, (float)y1, (float)0).uv(u0, v1).endVertex();
-        bufferbuilder.vertex(lastPos, (float)x1, (float)y1, (float)0).uv(u1, v1).endVertex();
-        bufferbuilder.vertex(lastPos, (float)x1, (float)y0, (float)0).uv(u1, v0).endVertex();
-        bufferbuilder.vertex(lastPos, (float)x0, (float)y0, (float)0).uv(u0, v0).endVertex();
+        bufferbuilder.vertex(lastPos, x0, y1, (float)0).uv(u0, v1).endVertex();
+        bufferbuilder.vertex(lastPos, x1, y1, (float)0).uv(u1, v1).endVertex();
+        bufferbuilder.vertex(lastPos, x1, y0, (float)0).uv(u1, v0).endVertex();
+        bufferbuilder.vertex(lastPos, x0, y0, (float)0).uv(u0, v0).endVertex();
         BufferUploader.draw(bufferbuilder.end());
 
         
     }
-    public static void blitColor(PoseStack stack, int x0, int width, int y0, int height, int color){
+    public static void blitColor(PoseStack stack, float x0, float width, float y0, float height, int color){
         Matrix4f lastPos = stack.last().pose();
-        int x1 = x0 + width;
-        int y1 = y0 + height;
+        float x1 = x0 + width;
+        float y1 = y0 + height;
 
         float f3 = (float)(color >> 24 & 255) / 255.0F;
         float f = (float)(color >> 16 & 255) / 255.0F;
@@ -154,10 +154,10 @@ public class ClientUtil {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
         bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        bufferbuilder.vertex(lastPos, (float)x0, (float)y1, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.vertex(lastPos, (float)x1, (float)y1, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.vertex(lastPos, (float)x1, (float)y0, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.vertex(lastPos, (float)x0, (float)y0, (float)0).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.vertex(lastPos, x0, y1, (float)0).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.vertex(lastPos, x1, y1, (float)0).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.vertex(lastPos, x1, y0, (float)0).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.vertex(lastPos, x0, y0, (float)0).color(f, f1, f2, f3).endVertex();
         BufferUploader.draw(bufferbuilder.end());
 
         RenderSystem.enableTexture();
