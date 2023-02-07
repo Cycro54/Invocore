@@ -8,6 +8,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.AbstractSelectionList;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.network.chat.Component;
@@ -61,7 +62,6 @@ public class ClientUtil {
 
         BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
         RenderSystem.disableCull();
-        RenderSystem.enableDepthTest();
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
@@ -71,7 +71,6 @@ public class ClientUtil {
         bufferbuilder.vertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).color(f, f1, f2, f3).endVertex();
         bufferbuilder.vertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).color(f, f1, f2, f3).endVertex();
         BufferUploader.draw(bufferbuilder.end());
-        RenderSystem.enableDepthTest();
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
         RenderSystem.enableCull();
@@ -99,7 +98,6 @@ public class ClientUtil {
 
         BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
         RenderSystem.disableCull();
-        RenderSystem.enableDepthTest();
         RenderSystem.enableBlend();
         RenderSystem.enableTexture();
         RenderSystem.defaultBlendFunc();
@@ -109,7 +107,7 @@ public class ClientUtil {
         bufferbuilder.vertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).uv(u1, v1).endVertex();
         bufferbuilder.vertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).uv(u0, v1).endVertex();
         BufferUploader.draw(bufferbuilder.end());
-        RenderSystem.enableDepthTest();
+        
         RenderSystem.disableTexture();
         RenderSystem.disableBlend();
         RenderSystem.enableCull();
@@ -124,10 +122,10 @@ public class ClientUtil {
         v0 /= imageScale;
         float v1 = v0 + (imageHeight/imageScale);
 
-        RenderSystem.disableDepthTest();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
         bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
         bufferbuilder.vertex(lastPos, (float)x0, (float)y1, (float)0).uv(u0, v1).endVertex();
@@ -136,7 +134,7 @@ public class ClientUtil {
         bufferbuilder.vertex(lastPos, (float)x0, (float)y0, (float)0).uv(u0, v0).endVertex();
         BufferUploader.draw(bufferbuilder.end());
 
-        RenderSystem.enableDepthTest();
+        
     }
     public static void blitColor(PoseStack stack, int x0, int width, int y0, int height, int color){
         Matrix4f lastPos = stack.last().pose();
@@ -148,10 +146,13 @@ public class ClientUtil {
         float f1 = (float)(color >> 8 & 255) / 255.0F;
         float f2 = (float)(color & 255) / 255.0F;
 
-        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
+
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
         bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         bufferbuilder.vertex(lastPos, (float)x0, (float)y1, (float)0).color(f, f1, f2, f3).endVertex();
         bufferbuilder.vertex(lastPos, (float)x1, (float)y1, (float)0).color(f, f1, f2, f3).endVertex();
@@ -435,7 +436,7 @@ public class ClientUtil {
         }
 
         public void RenderImage(PoseStack stack){
-            TEXTURE_MANAGER.bindForSetup(this.location);
+            RenderSystem.setShaderTexture(0, this.location);
             blitImage(stack, x0, actualWidth, y0, actualHeight, u0, imageWidth, v0, imageHeight, scale);
             TEXTURE_MANAGER.release(this.location);
         }
@@ -504,8 +505,6 @@ public class ClientUtil {
 //        protected int getRowTop(int p_230962_1_) {
 //            return this.y0 + 4 - (int)this.getScrollAmount() + p_230962_1_ * this.itemHeight + this.headerHeight;
 //        }
-
-
 
         @Override
         protected void renderList(@NotNull PoseStack stack, int xMouse, int yMouse, float p_238478_6_) {

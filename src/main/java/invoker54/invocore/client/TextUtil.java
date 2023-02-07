@@ -38,8 +38,6 @@ public class TextUtil {
 
         stack.pushPose();
 
-        RenderSystem.disableDepthTest();
-
         float maxTxtHeight = textLines.size() * (7 + 1);
         maxTxtHeight -= 1;
 //        LOGGER.info("Max Text Height is " + maxTxtHeight);
@@ -120,13 +118,10 @@ public class TextUtil {
             renderText(currText, stack, x, y, shadow);
         }
 
-        RenderSystem.enableDepthTest();
-
         stack.popPose();
     }
 
     public static void renderText(Component text, PoseStack stack, float x, float y, boolean shadow){
-        RenderSystem.disableDepthTest();
         MultiBufferSource.BufferSource irendertypebuffer$impl = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
 
 //        boolean flag = !player.isDiscrete();
@@ -149,6 +144,5 @@ public class TextUtil {
 //        }
 
         irendertypebuffer$impl.endBatch();
-        RenderSystem.enableDepthTest();
     }
 }
