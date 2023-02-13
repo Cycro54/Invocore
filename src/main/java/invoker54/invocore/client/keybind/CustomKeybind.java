@@ -2,15 +2,15 @@ package invoker54.invocore.client.keybind;
 
 import invoker54.invocore.Invocore;
 import net.minecraft.client.KeyMapping;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import org.openjdk.nashorn.api.tree.ForInLoopTree;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Mod.EventBusSubscriber(modid = Invocore.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@Mod.EventBusSubscriber(value = Dist.CLIENT, modid = Invocore.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class CustomKeybind {
     public KeyMapping keyBind;
     public IClicked iClicked;
