@@ -3,13 +3,18 @@ package invoker54.invocore.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.math.Matrix4f;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.network.chat.*;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.util.FormattedCharSequence;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
+import java.security.cert.CertificateParsingException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,13 +30,20 @@ public class TextUtil {
         RIGHT
     }
 
-    public static void renderText(PoseStack stack, Component text, boolean shadow,
+    public static void renderText(PoseStack stack, MutableComponent text, boolean shadow,
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
-        java.util.List<Component> list = new ArrayList<>();
-        list.add(text);
+        java.util.List<MutableComponent> list = new ArrayList<>();
+        if (mC.font.width(text) > maxWidth && maxHeight > 7) {
+            for (FormattedText text1 : mC.font.getSplitter().splitLines(text, (int) maxWidth, text.getStyle())){
+                list.add(Component.literal(text1.getString()).setStyle(text.getStyle()));
+            }
+        }
+        else {
+            list.add(text);
+        }
         renderText(stack, list, shadow, x0, maxWidth, y0, maxHeight, padding, align);
     }
-    public static void renderText(PoseStack stack, List<Component> textLines, boolean shadow,
+    public static void renderText(PoseStack stack, List<MutableComponent> textLines, boolean shadow,
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
         Font font = mC.font;
 
@@ -40,43 +52,51 @@ public class TextUtil {
         float maxTxtHeight = textLines.size() * (7 + 1);
         maxTxtHeight -= 1;
 //        LOGGER.info("Max Text Height is " + maxTxtHeight);
-        maxTxtHeight += (padding * 2);
+//        maxTxtHeight += (padding * 2);
 //        LOGGER.info("After padding it is " + maxTxtHeight);
 
         float maxTxtWidth = 0;
-        for (Component textComponent : textLines){
-            int currentWidth = font.width(textComponent.getString());
+        MutableComponent largestComponent = textLines.get(0);
+        for (MutableComponent textComponent : textLines){
+            int currentWidth = font.width(textComponent);
             if (currentWidth > maxTxtWidth){
                 maxTxtWidth = currentWidth;
+                largestComponent = textComponent;
             }
         }
 //        LOGGER.info("Max Text Width is " + maxTxtWidth);
-        maxTxtWidth += (padding * 2);
+//        maxTxtWidth += (padding * 2);
+        //There is 1 blank space in front of the last character, this will remove that.
+        maxTxtWidth -= 1;
 //        LOGGER.info("After padding it is " + maxTxtWidth);
 
+        float shadowOffset = 0;
         if (shadow){
-            maxTxtHeight += 1;
-            maxTxtWidth += 1;
+            shadowOffset = 1;
+//            LOGGER.debug("What is offset? " + offset);
+            maxTxtHeight += shadowOffset;
+            maxTxtWidth += shadowOffset;
         }
 
-        float heightLeft = maxHeight - maxTxtHeight;
+        float heightFillAmount = maxHeight/maxTxtHeight;
 //        LOGGER.info("Height Left is " + heightLeft);
-        float widthLeft = maxWidth - maxTxtWidth;
+        float widthFillAmount = maxWidth/maxTxtWidth;
 //        LOGGER.info("Width Left is " + widthLeft);
         float scaleFactor = 0;
 
-
-        if (heightLeft < widthLeft || heightLeft == widthLeft) {
-//                LOGGER.info("HeightLeft was smaller than WidthLeft");
+        if (heightFillAmount < widthFillAmount || heightFillAmount == widthFillAmount) {
+//                LOGGER.info("heightFillAmount was smaller than widthFillAmount");
             //example: maxHeight is 70, txtMaxHeight is 60.
             //That means maxHeight is 1.16 times larger than the txtMaxHeight
-            scaleFactor = (maxHeight / maxTxtHeight);
-        } else if (heightLeft > widthLeft) {
-//                LOGGER.info("WidthLeft was smaller than HeightLeft");
+            scaleFactor = ((maxHeight - (align == txtAlignment.MIDDLE ? (padding * 2) : padding)) / maxTxtHeight);
+        } else if (heightFillAmount > widthFillAmount) {
+//                LOGGER.info("widthFillAmount was smaller than heightFillAmount");
             //example: maxWidth is 50, txtMaxWidth is 25.
             //That means maxWidth is 2 times larger than the txtMaxWidth
-            scaleFactor = (maxWidth / maxTxtWidth);
+            scaleFactor = ((maxWidth - (align == txtAlignment.MIDDLE ? (padding * 2) : padding)) / maxTxtWidth);
         }
+//        LOGGER.debug("What's padding amount to remove? " + ((1F/maxWidth) * padding * 2));
+//        scaleFactor -= ((1F/maxWidth) * padding * 2);
 //        LOGGER.debug("What's the scale factor? " + scaleFactor);
         stack.scale(scaleFactor, scaleFactor, scaleFactor);
 
@@ -84,7 +104,7 @@ public class TextUtil {
 //        maxTxtHeight = (maxTxtHeight/scaleFactor);
 
         for (int a = 0; a < textLines.size(); ++a){
-            Component currText = textLines.get(a);
+            MutableComponent currText = textLines.get(a);
 
             float y = y0/scaleFactor;
             y = y + ((((maxHeight - (maxTxtHeight * scaleFactor))/2F) + (a * font.lineHeight * scaleFactor))/scaleFactor);
@@ -95,17 +115,17 @@ public class TextUtil {
             float x = x0;
             switch (align){
                 case LEFT:
-                    x = (x + padding)/scaleFactor;
+                    x = (x)/scaleFactor;
                     break;
                 case MIDDLE:
-                    x = ((x + ((maxWidth - ((font.width(currText) - 1) * scaleFactor))/2F))/scaleFactor);
+                    x = ((x + ((maxWidth - ((font.width(currText) - (1 - shadowOffset)) * scaleFactor))/2F))/scaleFactor);
 //                    LOGGER.debug("Max Width: " + (maxWidth));
 //                    LOGGER.debug("Font Width is now: " + (font.getStringWidth(currText) * scaleFactor));
 //                    LOGGER.debug("What's the empty space: " + ((maxWidth) - (font.getStringWidth(currText) * scaleFactor)));
 //                    LOGGER.debug("Where will the top left be for the text: " + x);
                     break;
                 case RIGHT:
-                    x = (((x + maxWidth)/scaleFactor) - (((padding/scaleFactor) + ((font.width(currText)) * scaleFactor))/scaleFactor));
+                    x = (((x + maxWidth)/scaleFactor) - (((padding) + ((font.width(currText) - (1 - shadowOffset)) * scaleFactor))/scaleFactor));
                     break;
             }
 
@@ -115,7 +135,7 @@ public class TextUtil {
         stack.popPose();
     }
 
-    public static void renderText(Component text, PoseStack stack, float x, float y, boolean shadow){
+    public static void renderText(MutableComponent text, PoseStack stack, float x, float y, boolean shadow){
         MultiBufferSource.BufferSource irendertypebuffer$impl = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
 
 //        boolean flag = !player.isDiscrete();

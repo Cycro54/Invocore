@@ -14,7 +14,7 @@ apply plugin: 'maven-publish'
 apply from: 'https://raw.githubusercontent.com/SizableShrimp/Forge-Class-Remapper/main/classremapper.gradle'
 
 
-version = '3.0.6'
+version = '3.0.9'
 group = 'invoker54' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'invocore-1.19.2'
 
@@ -39,7 +39,7 @@ minecraft {
     // Simply re-run your setup task after changing the mappings to update your workspace.
     mappings channel: 'official', version: '1.19.2'
 
-//     accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+    //     accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
 
     // Default run configurations.
     // These can be tweaked, removed, or duplicated as needed.
