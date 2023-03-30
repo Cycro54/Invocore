@@ -92,25 +92,20 @@ public class TextUtil {
 //            LOGGER.debug("base empty space is: " + (maxHeight - (maxTxtHeight * scaleFactor)));
 //            LOGGER.debug("resulting y spot is: " + (((maxHeight - (maxTxtHeight * scaleFactor))/2F) + (a * font.lineHeight * scaleFactor)));
 
-//            float y = y0 + (a * font.lineHeight) + (padding + (padding * a));
-//            y += ((maxHeight - maxTxtHeight)/2F);
-//            y = (y/scaleFactor);
-
-            float x = x0/scaleFactor;
-//            LOGGER.debug("What's x0: " + x);
+            float x = x0;
             switch (align){
                 case LEFT:
                     x = (x + padding)/scaleFactor;
                     break;
                 case MIDDLE:
-                    x = x + (((maxWidth - ((font.width(currText) - 1) * scaleFactor))/2F)/scaleFactor);
+                    x = ((x + ((maxWidth - ((font.width(currText) - 1) * scaleFactor))/2F))/scaleFactor);
 //                    LOGGER.debug("Max Width: " + (maxWidth));
 //                    LOGGER.debug("Font Width is now: " + (font.getStringWidth(currText) * scaleFactor));
 //                    LOGGER.debug("What's the empty space: " + ((maxWidth) - (font.getStringWidth(currText) * scaleFactor)));
 //                    LOGGER.debug("Where will the top left be for the text: " + x);
                     break;
                 case RIGHT:
-                    x = (((x + maxWidth)/scaleFactor) - ((padding/scaleFactor) + (font.width(currText) * scaleFactor)));
+                    x = (((x + maxWidth)/scaleFactor) - (((padding/scaleFactor) + ((font.width(currText)) * scaleFactor))/scaleFactor));
                     break;
             }
 
