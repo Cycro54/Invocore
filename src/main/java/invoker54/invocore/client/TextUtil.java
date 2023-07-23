@@ -3,19 +3,15 @@ package invoker54.invocore.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.math.Matrix4f;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.network.chat.*;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.TextComponent;
-import net.minecraft.util.FormattedCharSequence;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
-import java.security.cert.CertificateParsingException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,13 +27,36 @@ public class TextUtil {
         RIGHT
     }
 
+
+
     public static void renderText(PoseStack stack, MutableComponent text, boolean shadow,
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
         java.util.List<MutableComponent> list = new ArrayList<>();
-        if (mC.font.width(text) > maxWidth && maxHeight > 7) {
-            for (FormattedText text1 : mC.font.getSplitter().splitLines(text, (int) maxWidth, text.getStyle())){
+        //I took this from the if statement
+        // && maxHeight > mC.font.lineHeight
+        if (mC.font.width(text) > maxWidth) {
+            //Let's try this again.
+            //I have to make it so the text fits PERFECTLY inside the space provided.
+            //What that means is, I have to cut the text at the correct spots.
+
+            //First grab the X Y ratio for the space
+            double spaceRatio = maxWidth/maxHeight;
+            //Since Y has to be multiples of 9, make the ratio a multiple of 9
+            spaceRatio *= 9;
+
+            //Grab the textArea we will be working with
+            double textArea = 9 * mC.font.width(text);
+            //Do the formula u got from mathSolver to get the multiplier that I can use on the spaceRatio
+            double multiplier = textArea/(spaceRatio * 9);
+            multiplier = Math.sqrt(multiplier);
+            //and FINALLY, multiply spaceRatio with the multiplier, and that should be the cutoff point!
+            int cutoffPoint = (int) Math.round(multiplier * spaceRatio);
+
+            for (FormattedText text1 : mC.font.getSplitter().splitLines(text, cutoffPoint, text.getStyle())){
                 list.add(new TextComponent(text1.getString()).setStyle(text.getStyle()));
             }
+
+//            LOGGER.debug("how many lines are taken? " + list.size());
         }
         else {
             list.add(text);
@@ -51,7 +70,7 @@ public class TextUtil {
         stack.pushPose();
 
         float maxTxtHeight = textLines.size() * (7 + 1);
-        maxTxtHeight -= 1;
+        maxTxtHeight += -2 + textLines.size();
 //        LOGGER.info("Max Text Height is " + maxTxtHeight);
 //        maxTxtHeight += (padding * 2);
 //        LOGGER.info("After padding it is " + maxTxtHeight);
