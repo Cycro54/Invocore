@@ -14,7 +14,7 @@ apply plugin: 'maven-publish'
 apply from: 'https://raw.githubusercontent.com/SizableShrimp/Forge-Class-Remapper/main/classremapper.gradle'
 
 
-version = '3.0.9'
+version = '3.0.10'
 group = 'invoker54' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'invocore-1.19.2'
 
