@@ -1,5 +1,6 @@
 package invoker54.invocore.client;
 
+import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Matrix4f;
@@ -9,8 +10,12 @@ import net.minecraft.client.gui.components.AbstractSelectionList;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -159,6 +164,32 @@ public class ClientUtil {
         BufferUploader.end(bufferbuilder);
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
+    }
+    public static void blitItem(PoseStack stack, float x0, float width, float y0, float height, ItemStack itemStack){
+        Lighting.setupForFlatItems();
+        MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
+        ItemRenderer renderer = mC.getItemRenderer();
+        BakedModel bakedModel = renderer.getModel(itemStack, null, null, 0);
+        RenderSystem.disableDepthTest();
+
+        PoseStack posestack = RenderSystem.getModelViewStack();
+        posestack.pushPose();
+        posestack.translate(x0, y0, (double)(100.0F + renderer.blitOffset));
+        posestack.translate(width/2, height/2, 0.0D);
+        posestack.scale(1.0F, -1.0F, 1.0F);
+        posestack.scale(width, height, 16.0F);
+        RenderSystem.applyModelViewMatrix();
+        boolean flag = !bakedModel.usesBlockLight();
+        if (flag) {
+            Lighting.setupForFlatItems();
+        }
+        renderer.render(itemStack, ItemTransforms.TransformType.GUI, false, stack, bufferSource, 15728880, OverlayTexture.NO_OVERLAY, bakedModel);
+        bufferSource.endBatch();
+        if (flag) {
+            Lighting.setupFor3DItems();
+        }
+        posestack.popPose();
+        RenderSystem.applyModelViewMatrix();
     }
     public static Player getPlayer() {
         return ClientUtil.mC.player;

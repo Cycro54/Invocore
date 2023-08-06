@@ -1,5 +1,6 @@
 package invoker54.invocore;
 
+import invoker54.invocore.client.event.TestEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -41,6 +42,7 @@ public class Invocore {
     private void doClientStuff(final FMLClientSetupEvent event) {
         // do something that can only be done on the client
 //        LOGGER.info("Got game settings {}", event.getMinecraftSupplier().get().gameSettings);
+//        TestEvent.test();
     }
 
     private void enqueueIMC(final InterModEnqueueEvent event) {
