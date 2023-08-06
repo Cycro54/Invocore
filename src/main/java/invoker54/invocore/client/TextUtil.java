@@ -38,8 +38,12 @@ public class TextUtil {
     }
 
 
-
+    //deprecated
     public static void renderText(PoseStack stack, MutableComponent text, boolean shadow,
+                                  float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
+        renderText(stack, text, 0, shadow, x0, maxWidth, y0, maxHeight, padding, align);
+    }
+    public static void renderText(PoseStack stack, MutableComponent text, int maxSplits, boolean shadow,
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
         java.util.List<MutableComponent> list = new ArrayList<>();
         //I took this from the if statement
@@ -66,7 +70,18 @@ public class TextUtil {
                 list.add(Component.literal(text1.getString()).setStyle(text.getStyle()));
             }
 
-//            LOGGER.debug("how many lines are taken? " + list.size());
+            if (maxSplits != 0 && list.size() > maxSplits){
+                list.clear();
+
+                for (FormattedText text1 : mC.font.getSplitter().splitLines(text, (int) (Math.ceil((double) mC.font.width(text) /maxSplits)), text.getStyle())){
+                    list.add(Component.literal(text1.getString()).setStyle(text.getStyle()));
+                }
+                if (list.size() > maxSplits){
+                    list.get(list.size() - 2).append(" " + list.get(list.size()-1).getString());
+                    list.remove(list.size()-1);
+                }
+            }
+
         }
         else {
             list.add(text);
