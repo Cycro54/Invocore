@@ -1,7 +1,6 @@
 package invoker54.invocore.client;
 
 import invoker54.invocore.Invocore;
-import invoker54.invocore.client.ClientUtil;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;

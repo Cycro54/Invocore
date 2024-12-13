@@ -6,18 +6,17 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.util.math.vector.Matrix4f;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
 import static invoker54.invocore.client.ClientUtil.mC;
 
 public class TextUtil {
-    private static int black = new Color(0,0,0, 255).getRGB();
+    private static int black = new java.awt.Color(0,0,0, 255).getRGB();
     private static final Logger LOGGER = LogManager.getLogger();
 
     public enum txtAlignment{
@@ -26,61 +25,111 @@ public class TextUtil {
         RIGHT
     }
 
-    public static void renderText(MatrixStack stack, ITextComponent text, boolean shadow,
+
+    //deprecated
+    public static void renderText(MatrixStack stack, IFormattableTextComponent text, boolean shadow,
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
-        java.util.List<ITextComponent> list = new ArrayList<>();
-        list.add(text);
+        renderText(stack, text, 0, shadow, x0, maxWidth, y0, maxHeight, padding, align);
+    }
+    public static void renderText(MatrixStack stack, IFormattableTextComponent text, int maxSplits, boolean shadow,
+                                  float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
+        java.util.List<IFormattableTextComponent> list = new ArrayList<>();
+        //I took this from the if statement
+        // && maxHeight > mC.font.lineHeight
+        if (mC.fontRenderer.getStringPropertyWidth(text) > maxWidth) {
+            //Let's try this again.
+            //I have to make it so the text fits PERFECTLY inside the space provided.
+            //What that means is, I have to cut the text at the correct spots.
+
+            //First grab the X Y ratio for the space
+            double spaceRatio = maxWidth/maxHeight;
+            //Since Y has to be multiples of 9, make the ratio a multiple of 9
+            spaceRatio *= 9;
+
+            //Grab the textArea we will be working with
+            double textArea = 9 * mC.fontRenderer.getStringPropertyWidth(text);
+            //Do the formula u got from mathSolver to get the multiplier that I can use on the spaceRatio
+            double multiplier = textArea/(spaceRatio * 9);
+            multiplier = Math.sqrt(multiplier);
+            //and FINALLY, multiply spaceRatio with the multiplier, and that should be the cutoff point!
+            int cutoffPoint = (int) Math.round(multiplier * spaceRatio);
+
+            for (ITextProperties text1 : mC.fontRenderer.getCharacterManager().func_238362_b_(text, cutoffPoint, text.getStyle())){
+                list.add(new StringTextComponent(text1.getString()).setStyle(text.getStyle()));
+            }
+
+            if (maxSplits != 0 && list.size() > maxSplits){
+                list.clear();
+
+                for (ITextProperties text1 : mC.fontRenderer.getCharacterManager().func_238362_b_(text, (int) (Math.ceil((double) mC.fontRenderer.getStringPropertyWidth(text) /maxSplits)), text.getStyle())){
+                    list.add(new StringTextComponent(text1.getString()).setStyle(text.getStyle()));
+                }
+                if (list.size() > maxSplits){
+                    list.get(list.size() - 2).appendString(" " + list.get(list.size()-1).getString());
+                    list.remove(list.size()-1);
+                }
+            }
+
+        }
+        else {
+            list.add(text);
+        }
         renderText(stack, list, shadow, x0, maxWidth, y0, maxHeight, padding, align);
     }
-    public static void renderText(MatrixStack stack, List<ITextComponent> textLines, boolean shadow,
+    public static void renderText(MatrixStack stack, List<IFormattableTextComponent> textLines, boolean shadow,
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
         FontRenderer font = mC.fontRenderer;
 
         stack.push();
 
-        RenderSystem.disableRescaleNormal();
-        RenderSystem.disableDepthTest();
-
         float maxTxtHeight = textLines.size() * (7 + 1);
-        maxTxtHeight -= 1;
+        maxTxtHeight += -2 + textLines.size();
 //        LOGGER.info("Max Text Height is " + maxTxtHeight);
-        maxTxtHeight += (padding * 2);
+//        maxTxtHeight += (padding * 2);
 //        LOGGER.info("After padding it is " + maxTxtHeight);
 
         float maxTxtWidth = 0;
+        ITextComponent largestComponent = textLines.get(0);
         for (ITextComponent textComponent : textLines){
-            int currentWidth = font.getStringWidth(textComponent.getString());
+            int currentWidth = font.getStringPropertyWidth(textComponent);
             if (currentWidth > maxTxtWidth){
                 maxTxtWidth = currentWidth;
+                largestComponent = textComponent;
             }
         }
 //        LOGGER.info("Max Text Width is " + maxTxtWidth);
-        maxTxtWidth += (padding * 2);
+//        maxTxtWidth += (padding * 2);
+        //There is 1 blank space in front of the last character, this will remove that.
+        maxTxtWidth -= 1;
 //        LOGGER.info("After padding it is " + maxTxtWidth);
 
+        float shadowOffset = 0;
         if (shadow){
-            maxTxtHeight += 1;
-            maxTxtWidth += 1;
+            shadowOffset = 1;
+//            LOGGER.debug("What is offset? " + offset);
+            maxTxtHeight += shadowOffset;
+            maxTxtWidth += shadowOffset;
         }
 
-        float heightLeft = maxHeight - maxTxtHeight;
+        float heightFillAmount = maxHeight/maxTxtHeight;
 //        LOGGER.info("Height Left is " + heightLeft);
-        float widthLeft = maxWidth - maxTxtWidth;
+        float widthFillAmount = maxWidth/maxTxtWidth;
 //        LOGGER.info("Width Left is " + widthLeft);
         float scaleFactor = 0;
 
-
-        if (heightLeft < widthLeft || heightLeft == widthLeft) {
-//                LOGGER.info("HeightLeft was smaller than WidthLeft");
+        if (heightFillAmount < widthFillAmount || heightFillAmount == widthFillAmount) {
+//                LOGGER.info("heightFillAmount was smaller than widthFillAmount");
             //example: maxHeight is 70, txtMaxHeight is 60.
             //That means maxHeight is 1.16 times larger than the txtMaxHeight
-            scaleFactor = (maxHeight / maxTxtHeight);
-        } else if (heightLeft > widthLeft) {
-//                LOGGER.info("WidthLeft was smaller than HeightLeft");
+            scaleFactor = ((maxHeight - (align == txtAlignment.MIDDLE ? (padding * 2) : padding)) / maxTxtHeight);
+        } else if (heightFillAmount > widthFillAmount) {
+//                LOGGER.info("widthFillAmount was smaller than heightFillAmount");
             //example: maxWidth is 50, txtMaxWidth is 25.
             //That means maxWidth is 2 times larger than the txtMaxWidth
-            scaleFactor = (maxWidth / maxTxtWidth);
+            scaleFactor = ((maxWidth - (align == txtAlignment.MIDDLE ? (padding * 2) : padding)) / maxTxtWidth);
         }
+//        LOGGER.debug("What's padding amount to remove? " + ((1F/maxWidth) * padding * 2));
+//        scaleFactor -= ((1F/maxWidth) * padding * 2);
 //        LOGGER.debug("What's the scale factor? " + scaleFactor);
         stack.scale(scaleFactor, scaleFactor, scaleFactor);
 
@@ -96,39 +145,30 @@ public class TextUtil {
 //            LOGGER.debug("base empty space is: " + (maxHeight - (maxTxtHeight * scaleFactor)));
 //            LOGGER.debug("resulting y spot is: " + (((maxHeight - (maxTxtHeight * scaleFactor))/2F) + (a * font.lineHeight * scaleFactor)));
 
-//            float y = y0 + (a * font.lineHeight) + (padding + (padding * a));
-//            y += ((maxHeight - maxTxtHeight)/2F);
-//            y = (y/scaleFactor);
-
-            float x = x0/scaleFactor;
-//            LOGGER.debug("What's x0: " + x);
+            float x = x0;
             switch (align){
                 case LEFT:
-                    x = (x + padding)/scaleFactor;
+                    x = (x)/scaleFactor;
                     break;
                 case MIDDLE:
-                    x = x + (((maxWidth - ((font.getStringPropertyWidth(currText) - 1) * scaleFactor))/2F)/scaleFactor);
+                    x = ((x + ((maxWidth - ((font.getStringPropertyWidth(currText) - (1 - shadowOffset)) * scaleFactor))/2F))/scaleFactor);
 //                    LOGGER.debug("Max Width: " + (maxWidth));
 //                    LOGGER.debug("Font Width is now: " + (font.getStringWidth(currText) * scaleFactor));
 //                    LOGGER.debug("What's the empty space: " + ((maxWidth) - (font.getStringWidth(currText) * scaleFactor)));
 //                    LOGGER.debug("Where will the top left be for the text: " + x);
                     break;
                 case RIGHT:
-                    x = (((x + maxWidth)/scaleFactor) - ((padding/scaleFactor) + (font.getStringPropertyWidth(currText) * scaleFactor)));
+                    x = (((x + maxWidth)/scaleFactor) - (((padding) + ((font.getStringPropertyWidth(currText) - (1 - shadowOffset)) * scaleFactor))/scaleFactor));
                     break;
             }
 
             renderText(currText, stack, x, y, shadow);
         }
 
-        RenderSystem.enableDepthTest();
-        RenderSystem.enableRescaleNormal();
-
         stack.pop();
     }
 
     public static void renderText(ITextComponent text, MatrixStack stack, float x, float y, boolean shadow){
-        RenderSystem.disableDepthTest();
         IRenderTypeBuffer.Impl irendertypebuffer$impl = IRenderTypeBuffer.getImpl(Tessellator.getInstance().getBuffer());
 
 //        boolean flag = !player.isDiscrete();
@@ -142,6 +182,7 @@ public class TextUtil {
         //float f1 = Minecraft.getInstance().options.getBackgroundOpacity(0.25F);
         int j = (int)(0 * 255.0F) << 24;
         FontRenderer fontrenderer = mC.fontRenderer;
+        RenderSystem.disableDepthTest();
 
         fontrenderer.func_243247_a(text, x, y, -1, shadow, matrix4f, irendertypebuffer$impl, true, 0, lightCoords);
 

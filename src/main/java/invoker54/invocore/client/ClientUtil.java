@@ -1,19 +1,22 @@
 package invoker54.invocore.client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.gui.widget.list.AbstractList;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.ItemRenderer;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.WorldVertexBufferUploader;
+import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.model.IBakedModel;
+import net.minecraft.client.renderer.model.ItemCameraTransforms;
+import net.minecraft.client.renderer.texture.AtlasTexture;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.Matrix4f;
@@ -21,6 +24,8 @@ import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.World;
+import net.minecraftforge.client.model.BakedItemModel;
+import net.minecraftforge.client.model.SeparatePerspectiveModel;
 import net.minecraftforge.fml.client.gui.GuiUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -118,10 +123,10 @@ public class ClientUtil {
         RenderSystem.enableCull();
         stack.pop();
     }
-    public static void blitImage(MatrixStack stack, int x0, int width, int y0, int height, float u0, float imageWidth, float v0, float imageHeight, float imageScale){
+    public static void blitImage(MatrixStack stack, float x0, float width, float y0, float height, float u0, float imageWidth, float v0, float imageHeight, float imageScale){
         Matrix4f lastPos = stack.getLast().getMatrix();
-        int x1 = x0 + width;
-        int y1 = y0 + height;
+        float x1 = x0 + width;
+        float y1 = y0 + height;
         u0 /= imageScale;
         float u1 = u0 + (imageWidth/imageScale);
         v0 /= imageScale;
@@ -133,18 +138,18 @@ public class ClientUtil {
 
         BufferBuilder bufferbuilder = Tessellator.getInstance().getBuffer();
         bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
-        bufferbuilder.pos(lastPos, (float)x0, (float)y1, (float)0).tex(u0, v1).endVertex();
-        bufferbuilder.pos(lastPos, (float)x1, (float)y1, (float)0).tex(u1, v1).endVertex();
-        bufferbuilder.pos(lastPos, (float)x1, (float)y0, (float)0).tex(u1, v0).endVertex();
-        bufferbuilder.pos(lastPos, (float)x0, (float)y0, (float)0).tex(u0, v0).endVertex();
+        bufferbuilder.pos(lastPos, x0, y1, (float)0).tex(u0, v1).endVertex();
+        bufferbuilder.pos(lastPos, x1, y1, (float)0).tex(u1, v1).endVertex();
+        bufferbuilder.pos(lastPos, x1, y0, (float)0).tex(u1, v0).endVertex();
+        bufferbuilder.pos(lastPos, x0, y0, (float)0).tex(u0, v0).endVertex();
         bufferbuilder.finishDrawing();
         WorldVertexBufferUploader.draw(bufferbuilder);
         RenderSystem.enableDepthTest();
     }
-    public static void blitColor(MatrixStack stack, int x0, int width, int y0, int height, int color){
+    public static void blitColor(MatrixStack stack, float x0, float width, float y0, float height, int color){
         Matrix4f lastPos = stack.getLast().getMatrix();
-        int x1 = x0 + width;
-        int y1 = y0 + height;
+        float x1 = x0 + width;
+        float y1 = y0 + height;
 
         float f3 = (float)(color >> 24 & 255) / 255.0F;
         float f = (float)(color >> 16 & 255) / 255.0F;
@@ -155,15 +160,51 @@ public class ClientUtil {
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
+
         bufferbuilder.begin(7, DefaultVertexFormats.POSITION_COLOR);
-        bufferbuilder.pos(lastPos, (float)x0, (float)y1, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.pos(lastPos, (float)x1, (float)y1, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.pos(lastPos, (float)x1, (float)y0, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.pos(lastPos, (float)x0, (float)y0, (float)0).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.pos(lastPos, x0, y1, (float)0).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.pos(lastPos, x1, y1, (float)0).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.pos(lastPos, x1, y0, (float)0).color(f, f1, f2, f3).endVertex();
+        bufferbuilder.pos(lastPos, x0, y0, (float)0).color(f, f1, f2, f3).endVertex();
         bufferbuilder.finishDrawing();
         WorldVertexBufferUploader.draw(bufferbuilder);
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
+        RenderSystem.enableDepthTest();
+    }
+    public static void blitItem(MatrixStack stack, float x0, float width, float y0, float height, ItemStack itemStack){
+//        RenderHelper.setupGuiFlatDiffuseLighting();
+        ItemRenderer renderer = mC.getItemRenderer();
+        IBakedModel bakedModel = renderer.getItemModelMesher().getItemModel(itemStack);
+        RenderSystem.disableDepthTest();
+//        RenderSystem.enableBlend();
+//        RenderSystem.defaultAlphaFunc();
+
+        RenderSystem.pushMatrix();
+        RenderSystem.enableRescaleNormal();
+        RenderSystem.translatef(x0, y0, 0);
+        RenderSystem.translatef(width/2, height/2, 100 + renderer.zLevel);
+        RenderSystem.scalef(1.0F, -1.0F, 1.0F);
+        RenderSystem.scalef(width, height, 16);
+//        RenderSystem.mulTextureByProjModelView();
+        IRenderTypeBuffer.Impl irendertypebuffer$impl = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
+        boolean flag = !bakedModel.isSideLit();
+        if (flag) {
+            RenderHelper.setupGuiFlatDiffuseLighting();
+        }
+
+        renderer.renderItem(itemStack, ItemCameraTransforms.TransformType.GUI, false, stack, irendertypebuffer$impl, 15728880, OverlayTexture.NO_OVERLAY, bakedModel);
+        irendertypebuffer$impl.finish();
+        RenderSystem.enableDepthTest();
+        if (flag) {
+            RenderHelper.setupGui3DDiffuseLighting();
+        }
+
+        RenderSystem.disableBlend();
+        RenderSystem.disableRescaleNormal();
+        RenderSystem.popMatrix();
+//        RenderSystem.mulTextureByProjModelView();
     }
     public static PlayerEntity getPlayer() {
         return ClientUtil.mC.player;
@@ -497,7 +538,7 @@ public class ClientUtil {
             super.render(stack, xMouse, yMouse, partialTicks);
 
             ClientUtil.beginCrop(this.x0, this.x1 - this.x0, this.y0, this.y1 - this.y0, true);
-            if (!toolTip.isEmpty()){
+            if (!toolTip.isEmpty() && ClientUtil.mC.currentScreen != null){
                 GuiUtils.drawHoveringText(stack, this.toolTip, xMouse, yMouse, screenWidth, screenHeight,-1,mC.fontRenderer);
                 this.toolTip.clear();
             }
