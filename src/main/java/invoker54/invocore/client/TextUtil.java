@@ -1,27 +1,17 @@
 package invoker54.invocore.client;
 
-import com.google.gson.annotations.Since;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.math.Matrix4f;
-import com.mojang.math.SymmetricGroup3;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.gametest.framework.AfterBatch;
-import net.minecraft.nbt.FloatTag;
-import net.minecraft.network.chat.*;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.util.FormattedCharSequence;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.appender.rolling.action.PathWithAttributes;
+import org.joml.Matrix4f;
 
 import java.awt.*;
-import java.security.cert.CertificateParsingException;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,7 +35,7 @@ public class TextUtil {
     }
     public static void renderText(PoseStack stack, MutableComponent text, int maxSplits, boolean shadow,
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
-        java.util.List<MutableComponent> list = new ArrayList<>();
+        List<MutableComponent> list = new ArrayList<>();
         //I took this from the if statement
         // && maxHeight > mC.font.lineHeight
         if (mC.font.width(text) > maxWidth) {
@@ -195,7 +185,7 @@ public class TextUtil {
         int j = (int)(0 * 255.0F) << 24;
         Font fontrenderer = mC.font;
 
-        fontrenderer.drawInBatch(text, x, y, -1, shadow, matrix4f, irendertypebuffer$impl, true, 0, lightCoords);
+        fontrenderer.drawInBatch(text, x, y, -1, shadow, matrix4f, irendertypebuffer$impl, Font.DisplayMode.NORMAL, 0, lightCoords);
 
 //        fontrenderer.drawInBatch(text, x, y, -1, shadow, matrix4f, irendertypebuffer$impl, true, j, lightCoords);
 //        if (flag) {
