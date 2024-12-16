@@ -15,7 +15,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static invoker54.invocore.client.ClientUtil.mC;
+import static invoker54.invocore.client.ClientUtil.getFont;
 
 public class TextUtil {
     private static int black = new Color(0,0,0, 255).getRGB();
@@ -37,8 +37,8 @@ public class TextUtil {
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
         List<MutableComponent> list = new ArrayList<>();
         //I took this from the if statement
-        // && maxHeight > mC.font.lineHeight
-        if (mC.font.width(text) > maxWidth) {
+        // && maxHeight > getFont().font.lineHeight
+        if (ClientUtil.getMinecraft().font.width(text) > maxWidth) {
             //Let's try this again.
             //I have to make it so the text fits PERFECTLY inside the space provided.
             //What that means is, I have to cut the text at the correct spots.
@@ -49,21 +49,21 @@ public class TextUtil {
             spaceRatio *= 9;
 
             //Grab the textArea we will be working with
-            double textArea = 9 * mC.font.width(text);
+            double textArea = 9 * getFont().width(text);
             //Do the formula u got from mathSolver to get the multiplier that I can use on the spaceRatio
             double multiplier = textArea/(spaceRatio * 9);
             multiplier = Math.sqrt(multiplier);
             //and FINALLY, multiply spaceRatio with the multiplier, and that should be the cutoff point!
             int cutoffPoint = (int) Math.round(multiplier * spaceRatio);
 
-            for (FormattedText text1 : mC.font.getSplitter().splitLines(text, cutoffPoint, text.getStyle())){
+            for (FormattedText text1 : getFont().getSplitter().splitLines(text, cutoffPoint, text.getStyle())){
                 list.add(Component.literal(text1.getString()).setStyle(text.getStyle()));
             }
 
             if (maxSplits != 0 && list.size() > maxSplits){
                 list.clear();
 
-                for (FormattedText text1 : mC.font.getSplitter().splitLines(text, (int) (Math.ceil((double) mC.font.width(text) /maxSplits)), text.getStyle())){
+                for (FormattedText text1 : getFont().getSplitter().splitLines(text, (int) (Math.ceil((double) getFont().width(text) /maxSplits)), text.getStyle())){
                     list.add(Component.literal(text1.getString()).setStyle(text.getStyle()));
                 }
                 if (list.size() > maxSplits){
@@ -80,7 +80,7 @@ public class TextUtil {
     }
     public static void renderText(PoseStack stack, List<MutableComponent> textLines, boolean shadow,
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
-        Font font = mC.font;
+        Font font = getFont();
 
         stack.pushPose();
 
@@ -183,10 +183,9 @@ public class TextUtil {
 
         //float f1 = Minecraft.getInstance().options.getBackgroundOpacity(0.25F);
         int j = (int)(0 * 255.0F) << 24;
-        Font fontrenderer = mC.font;
+        Font fontrenderer = getFont();
 
-        fontrenderer.drawInBatch(text, x, y, -1, shadow, matrix4f, irendertypebuffer$impl, Font.DisplayMode.NORMAL, 0, lightCoords);
-
+        fontrenderer.drawInBatch(text, x, y, -1, shadow, matrix4f, irendertypebuffer$impl, Font.DisplayMode.SEE_THROUGH, 0, lightCoords);
 //        fontrenderer.drawInBatch(text, x, y, -1, shadow, matrix4f, irendertypebuffer$impl, true, j, lightCoords);
 //        if (flag) {
 //            fontrenderer.drawInBatch(text.getVisualOrderText(), x, y, -1, shadow, matrix4f, irendertypebuffer$impl, false, 0, lightcoords);

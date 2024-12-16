@@ -1,26 +1,26 @@
-package invoker54.invocore.client.event;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import invoker54.invocore.Invocore;
-import invoker54.invocore.client.ClientUtil;
-import invoker54.invocore.client.TextUtil;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.util.Mth;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-
-import java.awt.*;
-
-@Mod.EventBusSubscriber(modid = Invocore.MOD_ID, value =  Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
-public class TestEvent {
-    private static float aFloat = 0;
-    private static float bFloat = 0;
-
+//package invoker54.invocore.client.event;
+//
+//import com.mojang.blaze3d.vertex.PoseStack;
+//import invoker54.invocore.Invocore;
+//import invoker54.invocore.client.ClientUtil;
+//import invoker54.invocore.client.TextUtil;
+//import net.minecraft.network.chat.Component;
+//import net.minecraft.network.chat.MutableComponent;
+//import net.minecraft.util.Mth;
+//import net.minecraft.world.item.ItemStack;
+//import net.minecraft.world.item.Items;
+//import net.minecraftforge.api.distmarker.Dist;
+//import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
+//import net.minecraftforge.eventbus.api.SubscribeEvent;
+//import net.minecraftforge.fml.common.Mod;
+//
+//import java.awt.*;
+//
+//@Mod.EventBusSubscriber(modid = Invocore.MOD_ID, value =  Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
+//public class TestEvent {
+//    private static float aFloat = 0;
+//    private static float bFloat = 0;
+//
 //    @SubscribeEvent
 //    public static void test(RegisterGuiOverlaysEvent event){
 //        event.registerAboveAll("fallen_single_player_screen", (gui, guiGraphics, partialTicks, width, height) -> {
@@ -44,11 +44,13 @@ public class TestEvent {
 //            ClientUtil.blitColor(stack,width/4F, 1, 0, height, new Color(1,1,1,255).getRGB());
 //            ClientUtil.blitColor(stack,((width/4F) + width/2F) - 1, 1, 0, height, new Color(1,1,1,255).getRGB());
 //
+//
+//            ClientUtil.blitColor(stack, width/4F, width/4F, height - (height/8F)*2, height/8F, new Color(0, 84, 7, 255).getRGB());
+//
 //            MutableComponent txt = Component.literal("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 //            TextUtil.renderText(stack, txt, 0,true,
-//                    width/4F, width/4F, height/5F, height/8F,0, TextUtil.txtAlignment.LEFT);
-//            ClientUtil.blitColor(stack, width/4F, width/4F, height/5F, height/8F, new Color(0, 84, 7, 158).getRGB());
+//                    width/4F, width/4F, height - (height/8F)*2, height/8F,0, TextUtil.txtAlignment.LEFT);
 //
 //        });
 //    }
-}
+//}

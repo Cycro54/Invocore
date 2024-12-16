@@ -6,17 +6,12 @@ import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.AbstractSelectionList;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -28,28 +23,38 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
 
-import javax.annotation.Nonnull;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 public class ClientUtil {
-    public static final Minecraft mC = Minecraft.getInstance();
-    public static final TextureManager TEXTURE_MANAGER = Minecraft.getInstance().textureManager;
-    public static final ItemRenderer ITEM_RENDERER = Minecraft.getInstance().getItemRenderer();
+    private static Minecraft mC;
+
     public static final DecimalFormat d1 = new DecimalFormat("0.0");
     // Directly reference a log4j logger.
     private static final Logger LOGGER = LogManager.getLogger();
 
+    public static Font getFont(){
+        return getMinecraft().font;
+    }
+    public static Minecraft getMinecraft(){
+        if (mC == null) mC = Minecraft.getInstance();
+        return mC;
+    }
+    public static Player getPlayer() {
+        return getMinecraft().player;
+    }
+    public static Level getWorld(){
+        return getMinecraft().level;
+    }
+
     //This will face the player dependent on the players position, NOT camera orientation.
     public static void drawWorldLine(PoseStack stack, Vec3 origin, Vec3 target, float lineWidth, int color){
+
         stack.pushPose();
-        Vec3 cam = mC.gameRenderer.getMainCamera().getPosition().reverse();
+        Vec3 cam = getMinecraft().gameRenderer.getMainCamera().getPosition().reverse();
         stack.translate(cam.x(), cam.y(), cam.z());
         cam = cam.reverse();
         Matrix4f lastPos = stack.last().pose();
@@ -84,8 +89,8 @@ public class ClientUtil {
     }
     public static void drawWorldLine(PoseStack stack, Vec3 origin, Vec3 target, float lineWidth, float u0, float imageWidth, float v0, float imageHeight, float imageScale){
         stack.pushPose();
-        Vec3 cam = mC.gameRenderer.getMainCamera().getPosition().reverse();
-//        Vector3d cam = mC.player.position().inverse();
+        Vec3 cam = getMinecraft().gameRenderer.getMainCamera().getPosition().reverse();
+//        Vector3d cam = getWorld().player.position().inverse();
         stack.translate(cam.x(), cam.y(), cam.z());
         cam = cam.reverse();
         Matrix4f lastPos = stack.last().pose();
@@ -172,9 +177,8 @@ public class ClientUtil {
     public static void blitItem(PoseStack stack, float x0, float width, float y0, float height, ItemStack itemStack){
         Lighting.setupForFlatItems();
         MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
-        ItemRenderer renderer = mC.getItemRenderer();
+        ItemRenderer renderer = getMinecraft().getItemRenderer();
         BakedModel bakedModel = renderer.getModel(itemStack, null, null, 0);
-        RenderSystem.disableDepthTest();
 
         PoseStack posestack = RenderSystem.getModelViewStack();
         posestack.pushPose();
@@ -195,21 +199,15 @@ public class ClientUtil {
         posestack.popPose();
         RenderSystem.applyModelViewMatrix();
     }
-    public static Player getPlayer() {
-        return ClientUtil.mC.player;
-    }
-    public static Level getWorld(){
-        return ClientUtil.mC.level;
-    }
     public static Vec3 smoothLerp(Vec3 oldPos, Vec3 newPos, boolean useDelta){
-//        LOGGER.debug("PARTIAL TICK IN CLIENT UTIL IS: " + ClientUtil.mC.getFrameTime());
+//        LOGGER.debug("PARTIAL TICK IN CLIENT UTIL IS: " + ClientUtil.getWorld().getFrameTime());
         return new Vec3(
                 smoothLerp(oldPos.x, newPos.x, useDelta),
                 smoothLerp(oldPos.y, newPos.y, useDelta),
                 smoothLerp(oldPos.z, newPos.z, useDelta));
     }
     public static double smoothLerp(double oldDouble, double newDouble, boolean useDelta){
-        return Mth.lerp(useDelta ? Ticker.getDelta(true,true) : ClientUtil.mC.getFrameTime(),oldDouble,newDouble);
+        return Mth.lerp(useDelta ? Ticker.getDelta(true,true) : ClientUtil.getMinecraft().getFrameTime(),oldDouble,newDouble);
     }
 
     public static void copyEntityMovement(LivingEntity copier, LivingEntity toCopy){
@@ -241,8 +239,8 @@ public class ClientUtil {
 //        XPShop.LOGGER.debug((String.valueOf(width)) + (bounds.x1 - bounds.x0));
 //        XPShop.LOGGER.debug((String.valueOf(y)) + (bounds.y0));
 //        XPShop.LOGGER.debug((String.valueOf(height)) + (bounds.y1 - bounds.y0));
-        double scale = mC.getWindow().getGuiScale();
-        int windowHeight = mC.getWindow().getGuiScaledHeight();
+        double scale = getMinecraft().getWindow().getGuiScale();
+        int windowHeight = getMinecraft().getWindow().getGuiScaledHeight();
 
         //This is inverses y since scissor test requires it
         y = windowHeight - (height + y);
@@ -324,7 +322,7 @@ public class ClientUtil {
 //
 //            if (hidden) return;
 //
-//            Font fontrenderer = mC.font;
+//            Font fontrenderer = getWorld().font;
 //            TEXTURE_MANAGER.bindForSetup(WIDGETS_LOCATION);
 //            int i = this.get(this.isHovered);
 //            i = 46 + i * 20;
@@ -455,7 +453,7 @@ public class ClientUtil {
         public void RenderImage(PoseStack stack){
             RenderSystem.setShaderTexture(0, this.location);
             blitImage(stack, x0, actualWidth, y0, actualHeight, u0, imageWidth, v0, imageHeight, scale);
-            TEXTURE_MANAGER.release(this.location);
+            getMinecraft().textureManager.release(this.location);
         }
     }
 //
@@ -470,7 +468,7 @@ public class ClientUtil {
 //        //Height is used for how long you want the top and bottom panels to be if you had
 //        //renderTopAndBottom set to true.
 //        public SimpleList(int x0, int width, int y0, int height, int screenWidth, int screenHeight, Image background) {
-//            super(ClientUtil.mC, width, 0, y0, y0 + height, 30);
+//            super(ClientUtil.getWorld(), width, 0, y0, y0 + height, 30);
 //            this.x0 = x0;
 //            this.x1 = x0 + width;
 //            this.setRenderBackground(false);
@@ -512,8 +510,8 @@ public class ClientUtil {
 //            super.render(stack, xMouse, yMouse, partialTicks);
 //
 //            ClientUtil.beginCrop(this.x0, this.x1 - this.x0, this.y0, this.y1 - this.y0, true);
-//            if (!toolTip.isEmpty() && ClientUtil.mC.screen != null) {
-//                ClientUtil.mC.screen.renderComponentTooltip(stack, this.toolTip, xMouse, yMouse);
+//            if (!toolTip.isEmpty() && ClientUtil.getWorld().screen != null) {
+//                ClientUtil.getWorld().screen.renderComponentTooltip(stack, this.toolTip, xMouse, yMouse);
 //                this.toolTip.clear();
 //            }
 //            ClientUtil.endCrop();

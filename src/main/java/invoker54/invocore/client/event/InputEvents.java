@@ -26,8 +26,8 @@ public class InputEvents {
     }
 
     private static void onInput(int action, int key){
-        //LOGGER.debug("Is there a world?? " + (ClientUtil.mC.level == null));
-        if (ClientUtil.mC.level == null) return;
+        //LOGGER.debug("Is there a world?? " + (ClientUtil.getWorld().level == null));
+        if (ClientUtil.getWorld() == null) return;
 
         for (CustomKeybind cKeyBind : KeybindsInit.keyBinds){
             if (cKeyBind.keyBind.getKey().getValue() == key){

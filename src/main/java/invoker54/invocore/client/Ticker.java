@@ -43,6 +43,6 @@ public class Ticker {
 
     //returns how much actual time has passed (in ticks)
     public static float getDelta(boolean canPause, boolean inTicks){
-        return (canPause ? (ClientUtil.mC.isPaused() ? 0 : delta) : delta)/(inTicks ? 1 : 20);
+        return (canPause ? (ClientUtil.getMinecraft().isPaused() ? 0 : delta) : delta)/(inTicks ? 1 : 20);
     }
 }
