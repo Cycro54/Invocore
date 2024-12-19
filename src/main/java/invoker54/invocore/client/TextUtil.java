@@ -1,7 +1,6 @@
 package invoker54.invocore.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
@@ -16,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static invoker54.invocore.client.ClientUtil.getFont;
+import static invoker54.invocore.client.ClientUtil.getMinecraft;
 
 public class TextUtil {
     private static int black = new Color(0,0,0, 255).getRGB();
@@ -171,7 +171,7 @@ public class TextUtil {
     }
 
     public static void renderText(MutableComponent text, PoseStack stack, float x, float y, boolean shadow){
-        MultiBufferSource.BufferSource irendertypebuffer$impl = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+        MultiBufferSource.BufferSource irendertypebuffer$impl = getMinecraft().renderBuffers().bufferSource();
 
 //        boolean flag = !player.isDiscrete();
 //        float f = player.getBbHeight() * 0.5f;

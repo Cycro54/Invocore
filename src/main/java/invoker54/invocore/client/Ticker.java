@@ -1,14 +1,15 @@
 package invoker54.invocore.client;
 
 import invoker54.invocore.Invocore;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@Mod.EventBusSubscriber(value = Dist.CLIENT, modid = Invocore.MOD_ID)
+@EventBusSubscriber(value = Dist.CLIENT, modid = Invocore.MOD_ID)
 public class Ticker {
     private static long ticksInGame = 0;
     private static float partialTicks = 0;
@@ -23,22 +24,16 @@ public class Ticker {
     }
 
     @SubscribeEvent
-    protected static void renderTick(TickEvent.RenderTickEvent event) {
-        if (event.phase == TickEvent.Phase.START) {
-            partialTicks = event.renderTickTime;
-        } else {
-            calcDelta();
-        }
+    protected static void renderTick(EntityTickEvent.Pre event) {
+            partialTicks = ClientUtil.getMinecraft().getTimer().getGameTimeDeltaPartialTick(true);
     }
 
     @SubscribeEvent
-    protected static void clientTickEnd(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            ticksInGame++;
-            partialTicks = 0;
+    protected static void clientTickEnd(ClientTickEvent.Post event) {
+        ticksInGame++;
+        partialTicks = 0;
 
-            calcDelta();
-        }
+        calcDelta();
     }
 
     //returns how much actual time has passed (in ticks)

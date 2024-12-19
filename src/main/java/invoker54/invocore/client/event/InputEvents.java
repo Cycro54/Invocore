@@ -4,14 +4,14 @@ import invoker54.invocore.Invocore;
 import invoker54.invocore.client.ClientUtil;
 import invoker54.invocore.client.keybind.CustomKeybind;
 import invoker54.invocore.client.keybind.KeybindsInit;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.InputEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@Mod.EventBusSubscriber(value = Dist.CLIENT, modid = Invocore.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(value = Dist.CLIENT, modid = Invocore.MOD_ID, bus = EventBusSubscriber.Bus.GAME)
 public class InputEvents {
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -21,7 +21,12 @@ public class InputEvents {
     }
 
     @SubscribeEvent
-    public static void onMousePress(InputEvent.MouseButton event){
+    public static void onMousePre(InputEvent.MouseButton.Pre event){
+        onInput(event.getAction(), event.getButton());
+    }
+
+    @SubscribeEvent
+    public static void onMousePost(InputEvent.MouseButton.Post event){
         onInput(event.getAction(), event.getButton());
     }
 

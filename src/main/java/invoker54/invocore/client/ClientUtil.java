@@ -24,6 +24,7 @@ import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -71,17 +72,17 @@ public class ClientUtil {
         Vec3 targetUP = target.add(directionVector.scale(lineWidth/2F));
         Vec3 targetDOWN = target.add(directionVector.scale(-lineWidth/2F));
 
-        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
+        BufferBuilder bufferbuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         RenderSystem.disableCull();
         RenderSystem.enableBlend();
 //        RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
-        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        bufferbuilder.vertex(lastPos, (float) originUP.x(), (float) originUP.y(), (float) originUP.z()).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.vertex(lastPos, (float)targetUP.x(), (float)targetUP.y(), (float)targetUP.z()).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.vertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.vertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).color(f, f1, f2, f3).endVertex();
-        BufferUploader.drawWithShader(bufferbuilder.end());
+//        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        bufferbuilder.addVertex(lastPos, (float) originUP.x(), (float) originUP.y(), (float) originUP.z()).setColor(f, f1, f2, f3);
+        bufferbuilder.addVertex(lastPos, (float)targetUP.x(), (float)targetUP.y(), (float)targetUP.z()).setColor(f, f1, f2, f3);
+        bufferbuilder.addVertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).setColor(f, f1, f2, f3);
+        bufferbuilder.addVertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).setColor(f, f1, f2, f3);
+        BufferUploader.drawWithShader(bufferbuilder.build());
 //        RenderSystem.enableTexture();
         RenderSystem.disableBlend();
         RenderSystem.enableCull();
@@ -107,17 +108,16 @@ public class ClientUtil {
         Vec3 targetUP = target.add(directionVector.scale(lineWidth/2F));
         Vec3 targetDOWN = target.add(directionVector.scale(-lineWidth/2F));
 
-        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
+        BufferBuilder bufferbuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
         RenderSystem.disableCull();
         RenderSystem.enableBlend();
 //        RenderSystem.enableTexture();
         RenderSystem.defaultBlendFunc();
-        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferbuilder.vertex(lastPos, (float) originUP.x(), (float) originUP.y(), (float) originUP.z()).uv(u0, v0).endVertex();
-        bufferbuilder.vertex(lastPos, (float)targetUP.x(), (float)targetUP.y(), (float)targetUP.z()).uv(u1, v0).endVertex();
-        bufferbuilder.vertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).uv(u1, v1).endVertex();
-        bufferbuilder.vertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).uv(u0, v1).endVertex();
-        BufferUploader.drawWithShader(bufferbuilder.end());
+        bufferbuilder.addVertex(lastPos, (float) originUP.x(), (float) originUP.y(), (float) originUP.z()).setUv(u0, v0);
+        bufferbuilder.addVertex(lastPos, (float)targetUP.x(), (float)targetUP.y(), (float)targetUP.z()).setUv(u1, v0);
+        bufferbuilder.addVertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).setUv(u1, v1);
+        bufferbuilder.addVertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).setUv(u0, v1);
+        BufferUploader.drawWithShader(bufferbuilder.build());
         
 //        RenderSystem.disableTexture();
         RenderSystem.disableBlend();
@@ -137,13 +137,12 @@ public class ClientUtil {
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
-        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferbuilder.vertex(lastPos, x0, y1, (float)0).uv(u0, v1).endVertex();
-        bufferbuilder.vertex(lastPos, x1, y1, (float)0).uv(u1, v1).endVertex();
-        bufferbuilder.vertex(lastPos, x1, y0, (float)0).uv(u1, v0).endVertex();
-        bufferbuilder.vertex(lastPos, x0, y0, (float)0).uv(u0, v0).endVertex();
-        BufferUploader.drawWithShader(bufferbuilder.end());
+        BufferBuilder bufferbuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        bufferbuilder.addVertex(lastPos, x0, y1, (float)0).setUv(u0, v1);
+        bufferbuilder.addVertex(lastPos, x1, y1, (float)0).setUv(u1, v1);
+        bufferbuilder.addVertex(lastPos, x1, y0, (float)0).setUv(u1, v0);
+        bufferbuilder.addVertex(lastPos, x0, y0, (float)0).setUv(u0, v0);
+        BufferUploader.drawWithShader(bufferbuilder.build());
 
         
     }
@@ -163,40 +162,44 @@ public class ClientUtil {
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
-        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        bufferbuilder.vertex(lastPos, x0, y1, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.vertex(lastPos, x1, y1, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.vertex(lastPos, x1, y0, (float)0).color(f, f1, f2, f3).endVertex();
-        bufferbuilder.vertex(lastPos, x0, y0, (float)0).color(f, f1, f2, f3).endVertex();
-        BufferUploader.drawWithShader(bufferbuilder.end());
+        BufferBuilder bufferbuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        bufferbuilder.addVertex(lastPos, x0, y1, (float)0).setColor(f, f1, f2, f3);
+        bufferbuilder.addVertex(lastPos, x1, y1, (float)0).setColor(f, f1, f2, f3);
+        bufferbuilder.addVertex(lastPos, x1, y0, (float)0).setColor(f, f1, f2, f3);
+        bufferbuilder.addVertex(lastPos, x0, y0, (float)0).setColor(f, f1, f2, f3);
+        BufferUploader.drawWithShader(bufferbuilder.build());
 
 //        RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
     public static void blitItem(PoseStack stack, float x0, float width, float y0, float height, ItemStack itemStack){
-        Lighting.setupForFlatItems();
         MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
-        ItemRenderer renderer = getMinecraft().getItemRenderer();
+        ItemRenderer renderer = mC.getItemRenderer();
         BakedModel bakedModel = renderer.getModel(itemStack, null, null, 0);
 
-        PoseStack posestack = RenderSystem.getModelViewStack();
-        posestack.pushPose();
-        posestack.translate(x0, y0, (double)(100.0F + ItemRenderer.ITEM_COUNT_BLIT_OFFSET));
-        posestack.translate(width/2, height/2, 0.0D);
-        posestack.scale(1.0F, -1.0F, 1.0F);
-        posestack.scale(width, height, 16.0F);
-        RenderSystem.applyModelViewMatrix();
+        Matrix4fStack posestack = RenderSystem.getModelViewStack();
+        posestack.pushMatrix();
+        posestack.translate(x0, y0, (100.0F));
+        posestack.translate(width/2, height/2, 0.0F);
         boolean flag = !bakedModel.usesBlockLight();
         if (flag) {
             Lighting.setupForFlatItems();
+            posestack.scale(1.0F, -1.0F, 1.0F);
         }
+        else {
+            Lighting.setupFor3DItems();
+        }
+        posestack.scale(width, height, 1.0F);
+//        posestack.translate(x0, y0, 300.0F);
+//        posestack.scale(width, height, 1.0F);
+//        posestack.translate(width/2, height/2, 0.0F);
+        RenderSystem.applyModelViewMatrix();
         renderer.render(itemStack, ItemDisplayContext.GUI, false, stack, bufferSource, 15728880, OverlayTexture.NO_OVERLAY, bakedModel);
         bufferSource.endBatch();
         if (flag) {
             Lighting.setupFor3DItems();
         }
-        posestack.popPose();
+        posestack.popMatrix();
         RenderSystem.applyModelViewMatrix();
     }
     public static Vec3 smoothLerp(Vec3 oldPos, Vec3 newPos, boolean useDelta){
@@ -207,7 +210,7 @@ public class ClientUtil {
                 smoothLerp(oldPos.z, newPos.z, useDelta));
     }
     public static double smoothLerp(double oldDouble, double newDouble, boolean useDelta){
-        return Mth.lerp(useDelta ? Ticker.getDelta(true,true) : ClientUtil.getMinecraft().getFrameTime(),oldDouble,newDouble);
+        return Mth.lerp(useDelta ? Ticker.getDelta(true,true) : ClientUtil.getMinecraft().getFrameTimeNs(),oldDouble,newDouble);
     }
 
     public static void copyEntityMovement(LivingEntity copier, LivingEntity toCopy){
@@ -318,29 +321,8 @@ public class ClientUtil {
         }
 
         @Override
-        public void render(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
-//
-//            if (hidden) return;
-//
-//            Font fontrenderer = getWorld().font;
-//            TEXTURE_MANAGER.bindForSetup(WIDGETS_LOCATION);
-//            int i = this.get(this.isHovered);
-//            i = 46 + i * 20;
-//
-//            //left part of the button
-//            ClientUtil.blitImage(guiGraphics.pose(), this.getX(),  this.width / 2, this.getY(), this.height,
-//                    0, this.width / 2f, i, 20, 256);
-////            //left part of the button
-////            this.blit(stack, this.x, this.y, 0, 46 + i * 20, this.width / 2, this.height);
-//
-//            //right part of the button
-//            ClientUtil.blitImage(guiGraphics.pose(), this.getX( + this.width / 2,  this.width/2, this.getY(), this.height,
-//                    200 - (this.width/2), this.width/2, i, 20, 256);
-////            //right part of the button
-////            this.blit(stack, this.x + this.width / 2, this.y, 200 - this.width / 2, 46 + i * 20, this.width / 2, this.height);
-//
-//            int j = getFGColor();
-//            drawCenteredString(stack, fontrenderer, this.getMessage(), this.x + this.width / 2, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0F) << 24);
+        protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+            super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
         }
     }
     public static String ticksToTime(int ticks){
@@ -453,7 +435,7 @@ public class ClientUtil {
         public void RenderImage(PoseStack stack){
             RenderSystem.setShaderTexture(0, this.location);
             blitImage(stack, x0, actualWidth, y0, actualHeight, u0, imageWidth, v0, imageHeight, scale);
-            getMinecraft().textureManager.release(this.location);
+            getMinecraft().getTextureManager().release(this.location);
         }
     }
 //
@@ -545,17 +527,17 @@ public class ClientUtil {
 ////                        float f = this.isFocused() ? 1.0F : 0.5F;
 ////                        RenderSystem.color4f(f, f, f, 1.0F);
 ////                        bufferbuilder.begin(7, DefaultVertexFormats.POSITION);
-////                        bufferbuilder.vertex((double)l1, (double)(y0 + height + 2), 0.0D).endVertex();
-////                        bufferbuilder.vertex((double)i2, (double)(y0 + height + 2), 0.0D).endVertex();
-////                        bufferbuilder.vertex((double)i2, (double)(y0 - 2), 0.0D).endVertex();
-////                        bufferbuilder.vertex((double)l1, (double)(y0 - 2), 0.0D).endVertex();
+////                        bufferbuilder.addVertex((double)l1, (double)(y0 + height + 2), 0.0D);
+////                        bufferbuilder.addVertex((double)i2, (double)(y0 + height + 2), 0.0D);
+////                        bufferbuilder.addVertex((double)i2, (double)(y0 - 2), 0.0D);
+////                        bufferbuilder.addVertex((double)l1, (double)(y0 - 2), 0.0D);
 ////                        tessellator.end();
 ////                        RenderSystem.color4f(0.0F, 0.0F, 0.0F, 1.0F);
 ////                        bufferbuilder.begin(7, DefaultVertexFormats.POSITION);
-////                        bufferbuilder.vertex((double)(l1 + 1), (double)(y0 + height + 1), 0.0D).endVertex();
-////                        bufferbuilder.vertex((double)(i2 - 1), (double)(y0 + height + 1), 0.0D).endVertex();
-////                        bufferbuilder.vertex((double)(i2 - 1), (double)(y0 - 1), 0.0D).endVertex();
-////                        bufferbuilder.vertex((double)(l1 + 1), (double)(y0 - 1), 0.0D).endVertex();
+////                        bufferbuilder.addVertex((double)(l1 + 1), (double)(y0 + height + 1), 0.0D);
+////                        bufferbuilder.addVertex((double)(i2 - 1), (double)(y0 + height + 1), 0.0D);
+////                        bufferbuilder.addVertex((double)(i2 - 1), (double)(y0 - 1), 0.0D);
+////                        bufferbuilder.addVertex((double)(l1 + 1), (double)(y0 - 1), 0.0D);
 ////                        tessellator.end();
 ////                        RenderSystem.enableTexture();
 ////                    }

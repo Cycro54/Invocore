@@ -1,7 +1,6 @@
 package invoker54.invocore;
 
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -15,6 +14,6 @@ public class Invocore {
 
     public Invocore() {
         // Register ourselves for server and other game events we are interested in
-        MinecraftForge.EVENT_BUS.register(this);
+//        NeoForge.EVENT_BUS.register(this);
     }
 }
