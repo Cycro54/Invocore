@@ -191,6 +191,9 @@ public class ClientUtil {
         if (flag) {
             Lighting.setupForFlatItems();
         }
+        else {
+            Lighting.setupFor3DItems();
+        }
         renderer.render(itemStack, ItemDisplayContext.GUI, false, stack, bufferSource, 15728880, OverlayTexture.NO_OVERLAY, bakedModel);
         bufferSource.endBatch();
         if (flag) {

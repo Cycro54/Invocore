@@ -4,6 +4,7 @@
 //import invoker54.invocore.Invocore;
 //import invoker54.invocore.client.ClientUtil;
 //import invoker54.invocore.client.TextUtil;
+//import net.minecraft.ChatFormatting;
 //import net.minecraft.network.chat.Component;
 //import net.minecraft.network.chat.MutableComponent;
 //import net.minecraft.util.Mth;
@@ -15,6 +16,7 @@
 //import net.minecraftforge.fml.common.Mod;
 //
 //import java.awt.*;
+//import java.util.Locale;
 //
 //@Mod.EventBusSubscriber(modid = Invocore.MOD_ID, value =  Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 //public class TestEvent {
@@ -47,9 +49,18 @@
 //
 //            ClientUtil.blitColor(stack, width/4F, width/4F, height - (height/8F)*2, height/8F, new Color(0, 84, 7, 255).getRGB());
 //
-//            MutableComponent txt = Component.literal("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-//            TextUtil.renderText(stack, txt, 0,true,
-//                    width/4F, width/4F, height - (height/8F)*2, height/8F,0, TextUtil.txtAlignment.LEFT);
+//                        MutableComponent txt = Component.literal("Don't you understand that I am trying to help you?");
+////            TextUtil.renderText(stack, txt, 3,true,
+////                    width/4F, width/4F, height/5F, height/8F,0, TextUtil.txtAlignment.LEFT);
+//            ClientUtil.blitColor(stack, width/4F, width/4F, height/5F, height/8F, new Color(0, 84, 7, 158).getRGB());
+//
+//                    txt = Component.literal("Don't you understand that ");
+//        txt.withStyle(ChatFormatting.LIGHT_PURPLE).
+//                append(Component.literal("\nI'm trying to help you? Foolish.".toUpperCase(Locale.ROOT))
+//                        .withStyle(ChatFormatting.AQUA,ChatFormatting.BOLD,ChatFormatting.OBFUSCATED));
+////        ClientUtil.mC.fontRenderer.drawText(stack, txt, width / 4F, height / 5F, new Color(255,255,255,0).getRGB());
+//        TextUtil.renderText(stack, txt, 0, true,
+//                width / 4F, width / 4F, height / 5F, height / 8F, 0, TextUtil.txtAlignment.MIDDLE);
 //
 //        });
 //    }
