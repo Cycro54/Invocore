@@ -167,7 +167,6 @@ public class ClientUtil {
         RenderSystem.disableBlend();
     }
     public static void blitItem(PoseStack stack, float x0, float width, float y0, float height, ItemStack itemStack){
-        Lighting.setupForFlatItems();
         MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
         ItemRenderer renderer = mC.getItemRenderer();
         BakedModel bakedModel = renderer.getModel(itemStack, null, null, 0);
@@ -183,6 +182,9 @@ public class ClientUtil {
         boolean flag = !bakedModel.usesBlockLight();
         if (flag) {
             Lighting.setupForFlatItems();
+        }
+        else {
+            Lighting.setupFor3DItems();
         }
         renderer.render(itemStack, ItemTransforms.TransformType.GUI, false, stack, bufferSource, 15728880, OverlayTexture.NO_OVERLAY, bakedModel);
         bufferSource.endBatch();
