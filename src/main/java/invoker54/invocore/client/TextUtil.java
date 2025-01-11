@@ -33,7 +33,7 @@ public class TextUtil {
     }
     public static void renderText(MatrixStack stack, IFormattableTextComponent text, int maxSplits, boolean shadow,
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
-        java.util.List<IFormattableTextComponent> list = new ArrayList<>();
+        java.util.List<ITextProperties> list = new ArrayList<>();
         //I took this from the if statement
         // && maxHeight > mC.font.lineHeight
         if (mC.fontRenderer.getStringPropertyWidth(text) > maxWidth) {
@@ -42,31 +42,34 @@ public class TextUtil {
             //What that means is, I have to cut the text at the correct spots.
 
             //First grab the X Y ratio for the space
-            double spaceRatio = maxWidth/maxHeight;
+            double spaceRatio = maxWidth / maxHeight;
             //Since Y has to be multiples of 9, make the ratio a multiple of 9
             spaceRatio *= 9;
 
             //Grab the textArea we will be working with
             double textArea = 9 * mC.fontRenderer.getStringPropertyWidth(text);
             //Do the formula u got from mathSolver to get the multiplier that I can use on the spaceRatio
-            double multiplier = textArea/(spaceRatio * 9);
+            double multiplier = textArea / (spaceRatio * 9);
             multiplier = Math.sqrt(multiplier);
             //and FINALLY, multiply spaceRatio with the multiplier, and that should be the cutoff point!
             int cutoffPoint = (int) Math.round(multiplier * spaceRatio);
 
-            for (ITextProperties text1 : mC.fontRenderer.getCharacterManager().func_238362_b_(text, cutoffPoint, text.getStyle())){
-                list.add(new StringTextComponent(text1.getString()).setStyle(text.getStyle()));
-            }
+            list.addAll(mC.fontRenderer.getCharacterManager().func_238362_b_(text, cutoffPoint, Style.EMPTY));
 
-            if (maxSplits != 0 && list.size() > maxSplits){
+            if (maxSplits != 0 && list.size() > maxSplits) {
                 list.clear();
 
-                for (ITextProperties text1 : mC.fontRenderer.getCharacterManager().func_238362_b_(text, (int) (Math.ceil((double) mC.fontRenderer.getStringPropertyWidth(text) /maxSplits)), text.getStyle())){
-                    list.add(new StringTextComponent(text1.getString()).setStyle(text.getStyle()));
-                }
-                if (list.size() > maxSplits){
-                    list.get(list.size() - 2).appendString(" " + list.get(list.size()-1).getString());
-                    list.remove(list.size()-1);
+                list.addAll(mC.fontRenderer.getCharacterManager().func_238362_b_(text,
+                        (int) (Math.ceil((double) mC.fontRenderer.getStringPropertyWidth(text) / maxSplits)), Style.EMPTY));
+                if (list.size() > maxSplits) {
+                    ITextProperties part1 = list.get(list.size() - 2);
+                    ITextProperties part2 = list.get(list.size() - 1);
+
+                    list.remove(part1);
+                    list.remove(part2);
+
+                    list.add(ITextProperties.func_240655_a_(part1, ITextProperties.func_240652_a_(" "),
+                            part2));
                 }
             }
 
@@ -76,7 +79,7 @@ public class TextUtil {
         }
         renderText(stack, list, shadow, x0, maxWidth, y0, maxHeight, padding, align);
     }
-    public static void renderText(MatrixStack stack, List<IFormattableTextComponent> textLines, boolean shadow,
+    public static void renderText(MatrixStack stack, List<ITextProperties> textLines, boolean shadow,
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
         FontRenderer font = mC.fontRenderer;
 
@@ -89,8 +92,8 @@ public class TextUtil {
 //        LOGGER.info("After padding it is " + maxTxtHeight);
 
         float maxTxtWidth = 0;
-        ITextComponent largestComponent = textLines.get(0);
-        for (ITextComponent textComponent : textLines){
+        ITextProperties largestComponent = textLines.get(0);
+        for (ITextProperties textComponent : textLines){
             int currentWidth = font.getStringPropertyWidth(textComponent);
             if (currentWidth > maxTxtWidth){
                 maxTxtWidth = currentWidth;
@@ -137,7 +140,7 @@ public class TextUtil {
 //        maxTxtHeight = (maxTxtHeight/scaleFactor);
 
         for (int a = 0; a < textLines.size(); ++a){
-            ITextComponent currText = textLines.get(a);
+            ITextProperties currText = textLines.get(a);
 
             float y = y0/scaleFactor;
             y = y + ((((maxHeight - (maxTxtHeight * scaleFactor))/2F) + (a * font.FONT_HEIGHT * scaleFactor))/scaleFactor);
@@ -168,7 +171,7 @@ public class TextUtil {
         stack.pop();
     }
 
-    public static void renderText(ITextComponent text, MatrixStack stack, float x, float y, boolean shadow){
+    public static void renderText(ITextProperties text, MatrixStack stack, float x, float y, boolean shadow){
         IRenderTypeBuffer.Impl irendertypebuffer$impl = IRenderTypeBuffer.getImpl(Tessellator.getInstance().getBuffer());
 
 //        boolean flag = !player.isDiscrete();
@@ -184,7 +187,7 @@ public class TextUtil {
         FontRenderer fontrenderer = mC.fontRenderer;
         RenderSystem.disableDepthTest();
 
-        fontrenderer.func_243247_a(text, x, y, -1, shadow, matrix4f, irendertypebuffer$impl, true, 0, lightCoords);
+        fontrenderer.drawEntityText(LanguageMap.getInstance().func_241870_a(text), x, y, -1, shadow, matrix4f, irendertypebuffer$impl, true, 0, lightCoords);
 
 //        fontrenderer.drawInBatch(text, x, y, -1, shadow, matrix4f, irendertypebuffer$impl, true, j, lightCoords);
 //        if (flag) {

@@ -9,12 +9,15 @@
 //import net.minecraft.util.math.MathHelper;
 //import net.minecraft.util.text.IFormattableTextComponent;
 //import net.minecraft.util.text.StringTextComponent;
+//import net.minecraft.util.text.TextFormatting;
 //import net.minecraftforge.api.distmarker.Dist;
 //import net.minecraftforge.client.event.RenderGameOverlayEvent;
 //import net.minecraftforge.eventbus.api.SubscribeEvent;
+//import net.minecraftforge.fml.client.gui.GuiUtils;
 //import net.minecraftforge.fml.common.Mod;
 //
 //import java.awt.*;
+//import java.util.Locale;
 //
 //@Mod.EventBusSubscriber(modid = Invocore.MOD_ID, value =  Dist.CLIENT)
 //public class TestEvent {
@@ -47,8 +50,12 @@
 //        ClientUtil.blitColor(stack, ((width / 4F) + width / 2F) - 1, 1, 0, height, new Color(1, 1, 1, 255).getRGB());
 //
 //        ClientUtil.blitColor(stack, width / 4F, width / 4F, height / 5F, height / 8F, new Color(0, 84, 7, 158).getRGB());
-//        IFormattableTextComponent txt = new StringTextComponent("Don't you understand that I am trying to help you? Foolish...");
-//        TextUtil.renderText(stack, txt, 3, true,
-//                width / 4F, width / 4F, height / 5F, height / 8F, 0, TextUtil.txtAlignment.LEFT);
+//        IFormattableTextComponent txt = new StringTextComponent("Don't you understand that \n");
+//        txt.mergeStyle(TextFormatting.LIGHT_PURPLE).
+//                appendSibling(new StringTextComponent("I'm trying to help you? Foolish.".toUpperCase(Locale.ROOT))
+//                        .mergeStyle(TextFormatting.AQUA,TextFormatting.BOLD,TextFormatting.OBFUSCATED));
+////        ClientUtil.mC.fontRenderer.drawText(stack, txt, width / 4F, height / 5F, new Color(255,255,255,0).getRGB());
+//        TextUtil.renderText(stack, txt, 0, true,
+//                width / 4F, width / 4F, height / 5F, height / 8F, 0, TextUtil.txtAlignment.MIDDLE);
 //    }
 //}
