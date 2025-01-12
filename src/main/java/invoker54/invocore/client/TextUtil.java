@@ -5,9 +5,10 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.math.Matrix4f;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.locale.Language;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Style;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,7 +36,7 @@ public class TextUtil {
     }
     public static void renderText(PoseStack stack, MutableComponent text, int maxSplits, boolean shadow,
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
-        java.util.List<MutableComponent> list = new ArrayList<>();
+        java.util.List<FormattedText> list = new ArrayList<>();
         //I took this from the if statement
         // && maxHeight > mC.font.lineHeight
         if (mC.font.width(text) > maxWidth) {
@@ -56,19 +57,22 @@ public class TextUtil {
             //and FINALLY, multiply spaceRatio with the multiplier, and that should be the cutoff point!
             int cutoffPoint = (int) Math.round(multiplier * spaceRatio);
 
-            for (FormattedText text1 : mC.font.getSplitter().splitLines(text, cutoffPoint, text.getStyle())){
-                list.add(new TextComponent(text1.getString()).setStyle(text.getStyle()));
-            }
+            list.addAll(mC.font.getSplitter().splitLines(text, cutoffPoint, Style.EMPTY));
 
-            if (maxSplits != 0 && list.size() > maxSplits){
+            if (maxSplits != 0 && list.size() > maxSplits) {
                 list.clear();
 
-                for (FormattedText text1 : mC.font.getSplitter().splitLines(text, (int) (Math.ceil((double) mC.font.width(text) /maxSplits)), text.getStyle())){
-                    list.add(new TextComponent(text1.getString()).setStyle(text.getStyle()));
-                }
-                if (list.size() > maxSplits){
-                    list.get(list.size() - 2).append(" " + list.get(list.size()-1).getString());
-                    list.remove(list.size()-1);
+                list.addAll(mC.font.getSplitter().splitLines(text,
+                        (int) (Math.ceil((double) mC.font.width(text) / maxSplits)), Style.EMPTY));
+                if (list.size() > maxSplits) {
+                    FormattedText part1 = list.get(list.size() - 2);
+                    FormattedText part2 = list.get(list.size() - 1);
+
+                    list.remove(part1);
+                    list.remove(part2);
+
+                    list.add(FormattedText.composite(part1, FormattedText.of(" "),
+                            part2));
                 }
             }
 
@@ -78,7 +82,7 @@ public class TextUtil {
         }
         renderText(stack, list, shadow, x0, maxWidth, y0, maxHeight, padding, align);
     }
-    public static void renderText(PoseStack stack, List<MutableComponent> textLines, boolean shadow,
+    public static void renderText(PoseStack stack, List<FormattedText> textLines, boolean shadow,
                                   float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
         Font font = mC.font;
 
@@ -91,8 +95,8 @@ public class TextUtil {
 //        LOGGER.info("After padding it is " + maxTxtHeight);
 
         float maxTxtWidth = 0;
-        MutableComponent largestComponent = textLines.get(0);
-        for (MutableComponent textComponent : textLines){
+        FormattedText largestComponent = textLines.get(0);
+        for (FormattedText textComponent : textLines){
             int currentWidth = font.width(textComponent);
             if (currentWidth > maxTxtWidth){
                 maxTxtWidth = currentWidth;
@@ -139,7 +143,7 @@ public class TextUtil {
 //        maxTxtHeight = (maxTxtHeight/scaleFactor);
 
         for (int a = 0; a < textLines.size(); ++a){
-            MutableComponent currText = textLines.get(a);
+            FormattedText currText = textLines.get(a);
 
             float y = y0/scaleFactor;
             y = y + ((((maxHeight - (maxTxtHeight * scaleFactor))/2F) + (a * font.lineHeight * scaleFactor))/scaleFactor);
@@ -170,7 +174,7 @@ public class TextUtil {
         stack.popPose();
     }
 
-    public static void renderText(MutableComponent text, PoseStack stack, float x, float y, boolean shadow){
+    public static void renderText(FormattedText text, PoseStack stack, float x, float y, boolean shadow){
         MultiBufferSource.BufferSource irendertypebuffer$impl = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
 
 //        boolean flag = !player.isDiscrete();
@@ -185,7 +189,7 @@ public class TextUtil {
         int j = (int)(0 * 255.0F) << 24;
         Font fontrenderer = mC.font;
 
-        fontrenderer.drawInBatch(text, x, y, -1, shadow, matrix4f, irendertypebuffer$impl, true, 0, lightCoords);
+        fontrenderer.drawInBatch(Language.getInstance().getVisualOrder(text), x, y, -1, shadow, matrix4f, irendertypebuffer$impl, true, 0, lightCoords);
 
 //        fontrenderer.drawInBatch(text, x, y, -1, shadow, matrix4f, irendertypebuffer$impl, true, j, lightCoords);
 //        if (flag) {
