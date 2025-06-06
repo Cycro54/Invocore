@@ -1,9 +1,10 @@
-package invoker54.invocore.client;
+package invoker54.invocore.client.util;
 
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Matrix4f;
+import invoker54.invocore.client.Ticker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.AbstractSelectionList;
@@ -36,7 +37,6 @@ import java.util.Objects;
 
 public class ClientUtil {
     public static final Minecraft mC = Minecraft.getInstance();
-    public static final TextureManager TEXTURE_MANAGER = Minecraft.getInstance().textureManager;
     public static final ItemRenderer ITEM_RENDERER = Minecraft.getInstance().getItemRenderer();
     public static final DecimalFormat d1 = new DecimalFormat("0.0");
     // Directly reference a log4j logger.
@@ -116,6 +116,10 @@ public class ClientUtil {
         RenderSystem.enableCull();
         stack.popPose();
     }
+    public static void blitImage(PoseStack stack, InvoZone renderZone, InvoZone imageZone, float imageScale){
+        blitImage(stack, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(),
+                imageZone.x(), imageZone.width(), imageZone.y(), imageZone.height(), imageScale);
+    }
     public static void blitImage(PoseStack stack, float x0, float width, float y0, float height, float u0, float imageWidth, float v0, float imageHeight, float imageScale){
         Matrix4f lastPos = stack.last().pose();
         float x1 = x0 + width;
@@ -164,6 +168,9 @@ public class ClientUtil {
         BufferUploader.end(bufferbuilder);
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
+    }
+    public static void blitItem(PoseStack stack, InvoZone renderZone, ItemStack itemStack){
+        blitItem(stack, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), itemStack);
     }
     public static void blitItem(PoseStack stack, float x0, float width, float y0, float height, ItemStack itemStack){
         Lighting.setupForFlatItems();
@@ -269,6 +276,7 @@ public class ClientUtil {
         }
     }
 
+    //TODO: Remove in a later version
     public static class Bounds{
         int x0;
         int x1;
@@ -319,25 +327,25 @@ public class ClientUtil {
         public void renderButton(PoseStack stack, int xMouse, int yMouse, float partialTicks) {
             if (hidden) return;
 
-            Font fontrenderer = mC.font;
-            TEXTURE_MANAGER.bindForSetup(WIDGETS_LOCATION);
+            Font font = mC.font;
+            getTextureManager().getTexture(WIDGETS_LOCATION);
             int i = this.getYImage(this.isHovered);
             i = 46 + i * 20;
 
             //left part of the button
-            ClientUtil.blitImage(stack, this.x,  this.width / 2, this.y, this.height,
-                    0, this.width / 2f, i, 20, 256);
+            InvoZone renderZone = new InvoZone(this.x, this.width / 2, this.y, this.height);
+            InvoZone imageZone = new InvoZone(0, this.width / 2, i, 20);
+            ClientUtil.blitImage(stack, renderZone, imageZone, 256);
 //            //left part of the button
 //            this.blit(stack, this.x, this.y, 0, 46 + i * 20, this.width / 2, this.height);
 
             //right part of the button
-            ClientUtil.blitImage(stack, this.x + this.width / 2,  this.width/2, this.y, this.height,
-                    200 - (this.width/2), this.width/2, i, 20, 256);
-//            //right part of the button
-//            this.blit(stack, this.x + this.width / 2, this.y, 200 - this.width / 2, 46 + i * 20, this.width / 2, this.height);
+            renderZone.setX(renderZone.right());
+            imageZone.setX((200 - imageZone.width()));
+            ClientUtil.blitImage(stack, renderZone, imageZone, 256);
 
             int j = getFGColor();
-            drawCenteredString(stack, fontrenderer, this.getMessage(), this.x + this.width / 2, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0F) << 24);
+            drawCenteredString(stack, font, this.getMessage(), this.x + this.width / 2, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0F) << 24);
         }
     }
     public static String ticksToTime(int ticks){
@@ -370,103 +378,44 @@ public class ClientUtil {
         formattedNumber = formattedNumber + suffix.charAt(power/3);
         return formattedNumber.length()>4 ?  formattedNumber.replaceAll("\\.[0-9]+ ", "") : formattedNumber;
     }
-
-    @Deprecated
-    public static void drawStretchText(PoseStack stack, String text, float currSize, int targSize, int x, int y, int color, boolean shadow){
-        stack.pushPose();
-        float newScale = targSize/currSize;
-        stack.scale(newScale,newScale,newScale);
-
-        //Must divide the position by the newScale due to the new difference
-        x = Math.round(x/newScale);
-        y = Math.round(y/newScale);
-
-        if (shadow) ClientUtil.mC.font.drawShadow(stack, text, x, y, color);
-        else ClientUtil.mC.font.draw(stack, text, x, y, color);
-
-        stack.popPose();
+    public static TextureManager getTextureManager(){
+        return mC.getTextureManager();
     }
-
     public static class Image {
-
         protected ResourceLocation location;
-        protected int u0;
-        protected int v0;
-        protected float imageWidth;
-        protected float imageHeight;
-        public int x0;
-        protected int origWidth;
-        protected int actualWidth;
-        public int y0;
-        protected int actualHeight;
-        protected int origHeight;
-        protected int scale;
+        protected final InvoZone imageZone;
+        protected final InvoZone renderZone;
+        protected float scale;
 
-        public Image(ResourceLocation loc, int u0, float imageWidth, int v0, float imageHeight, int scale){
+        public Image(ResourceLocation loc, float u0, float imageWidth, float v0, float imageHeight, float scale){
             this.location = loc;
-            this.u0 = u0;
-            this.imageWidth = imageWidth;
-            this.actualWidth = (int) imageWidth;
-            this.origWidth = (int) imageWidth;
-            this.v0 = v0;
-            this.imageHeight = imageHeight;
-            this.actualHeight = (int) imageHeight;
-            this.origHeight = (int) imageHeight;
+            this.imageZone = new InvoZone(u0, imageWidth, v0, imageHeight);
+            this.renderZone = new InvoZone(0, imageWidth, 0, imageHeight);
             this.scale = scale;
         }
 
         public void resetScale(){
-            this.actualWidth = this.origWidth;
-            this.actualHeight = this.origHeight;
+            this.renderZone.setWidth(this.imageZone.width());
+            this.renderZone.setHeight(this.imageZone.height());
         }
 
-        public int centerOnImageX(int targWidth){
-            return this.x0 + ((this.actualWidth - targWidth)/2);
+        public InvoZone getRenderZone(){
+            return this.renderZone;
         }
-        public int centerOnImageY(int targHeight){
-            return this.y0 + ((this.actualHeight - targHeight)/2);
-        }
-        public void centerImageX(int x0, int width){
-//            LOGGER.debug("THIS IS MY OLD X ORIGIN: " + this.x0);
-            this.x0 = (x0 + ((width - actualWidth)/2));
-//            LOGGER.debug("THIS IS MY NEW X ORIGIN: " + this.x0);
-        }
-        public void centerImageY(int y0, int height){
-            this.y0 = (y0 + ((height - actualHeight)/2));
+
+        public InvoZone getImageZone(){
+            return this.imageZone;
         }
 
         public boolean isMouseOver(int mouseX, int mouseY){
-            return mouseX >= x0 && mouseX <= (x0 + actualWidth) && mouseY >= y0 && mouseY <= (y0 + actualHeight);
+            return mouseX >= renderZone.x() && mouseX <= (renderZone.x() + renderZone.width())
+                    && mouseY >= renderZone.y() && mouseY <= (renderZone.y() + renderZone.height());
         }
 
-        public int getWidth(){
-            return this.actualWidth;
-        }
-        public int getHeight(){
-            return this.actualHeight;
-        }
-        public int getRight(){return this.x0 + this.getWidth();}
-        public int getDown(){return this.y0 + this.getHeight();}
-
-        public void moveTo(int x0, int y0){
-            this.x0 = x0;
-            this.y0 = y0;
-        }
-
-        public void setImageSize(float imageWidth, float imageHeight){
-            this.imageWidth = imageWidth;
-            this.imageHeight = imageHeight;
-        }
-
-        public void setActualSize(int actualWidth, int actualHeight){
-            this.actualWidth = actualWidth;
-            this.actualHeight = actualHeight;
-        }
-
-        public void RenderImage(PoseStack stack){
-            RenderSystem.setShaderTexture(0, this.location);
-            blitImage(stack, x0, actualWidth, y0, actualHeight, u0, imageWidth, v0, imageHeight, scale);
-            TEXTURE_MANAGER.release(this.location);
+        public void render(PoseStack stack){
+            getTextureManager().getTexture(this.location);
+            blitImage(stack, renderZone, imageZone, scale);
+//            TEXTURE_MANAGER.release(this.location);
         }
     }
 

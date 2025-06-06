@@ -1,4 +1,4 @@
-package invoker54.invocore.client;
+package invoker54.invocore.client.util;
 
 import com.mojang.math.Vector3d;
 import invoker54.invocore.Invocore;
