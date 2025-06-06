@@ -142,6 +142,9 @@ public class ClientUtil {
         bufferbuilder.end();
         BufferUploader.end(bufferbuilder);
     }
+    public static void blitColor(PoseStack stack, InvoZone renderZone, int color){
+        blitColor(stack, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), color);
+    }
     public static void blitColor(PoseStack stack, float x0, float width, float y0, float height, int color){
         Matrix4f lastPos = stack.last().pose();
         float x1 = x0 + width;
