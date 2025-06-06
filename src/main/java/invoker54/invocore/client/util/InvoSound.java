@@ -1,21 +1,16 @@
-package invoker54.invocore.client;
+package invoker54.invocore.client.util;
 
 import invoker54.invocore.Invocore;
-import net.minecraft.client.audio.BeeSound;
 import net.minecraft.client.audio.LocatableSound;
 import net.minecraft.client.audio.SoundHandler;
-import net.minecraft.client.audio.SoundSource;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.sound.PlaySoundSourceEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.system.CallbackI;
 
 @Mod.EventBusSubscriber(value = Dist.CLIENT, modid = Invocore.MOD_ID)
 public class InvoSound extends LocatableSound {
@@ -40,20 +35,20 @@ public class InvoSound extends LocatableSound {
     }
 
     public static SoundHandler getSoundHandler(){
-        if (soundHandler == null) soundHandler = ClientUtil.mC.getSoundHandler();
+        if (soundHandler == null) soundHandler = ClientUtil.mC.getSoundManager();
         return soundHandler;
     }
 
     public boolean isDonePlaying() {
 //        return this.mySource == null || this.mySource.isStopped();
-        return getSoundHandler().isPlaying(this) == false;
+        return getSoundHandler().isActive(this) == false;
     }
 
     public InvoSound duplicate(){
         return new InvoSound(this.mySoundEvent, this.mySoundCategory).setPreModifySound(this.preModifySound)
                 .setVolume(this.volume).setPitch(this.pitch).setPos(new Vector3d(this.x, this.y, this.z))
-                .setRepeatDelay(this.invoDelay, this.delayedStart).setAttenuation(this.attenuationType)
-                .setGlobal(this.global);
+                .setRepeatDelay(this.invoDelay, this.delayedStart).setAttenuation(this.attenuation)
+                .setGlobal(this.relative);
     }
 
     public InvoSound setPreModifySound(IModifySound newModifier){
@@ -72,9 +67,9 @@ public class InvoSound extends LocatableSound {
     }
 
     public InvoSound setPos(Vector3d pos){
-        this.x = pos.getX();
-        this.y = pos.getY();
-        this.z = pos.getZ();
+        this.x = pos.x();
+        this.y = pos.y();
+        this.z = pos.z();
         return this;
     }
 
@@ -85,12 +80,12 @@ public class InvoSound extends LocatableSound {
     }
 
     public InvoSound setAttenuation(AttenuationType type){
-        this.attenuationType = type;
+        this.attenuation = type;
         return this;
     }
 
     public InvoSound setGlobal(boolean global){
-        this.global = global;
+        this.relative = global;
         return this;
     }
 

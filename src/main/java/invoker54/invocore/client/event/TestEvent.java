@@ -2,8 +2,9 @@
 //
 //import com.mojang.blaze3d.matrix.MatrixStack;
 //import invoker54.invocore.Invocore;
-//import invoker54.invocore.client.ClientUtil;
-//import invoker54.invocore.client.TextUtil;
+//import invoker54.invocore.client.util.ClientUtil;
+//import invoker54.invocore.client.util.TextUtil;
+//import invoker54.invocore.common.ModLogger;
 //import net.minecraft.item.ItemStack;
 //import net.minecraft.item.Items;
 //import net.minecraft.util.math.MathHelper;
@@ -13,23 +14,25 @@
 //import net.minecraftforge.api.distmarker.Dist;
 //import net.minecraftforge.client.event.RenderGameOverlayEvent;
 //import net.minecraftforge.eventbus.api.SubscribeEvent;
-//import net.minecraftforge.fml.client.gui.GuiUtils;
 //import net.minecraftforge.fml.common.Mod;
 //
 //import java.awt.*;
-//import java.util.Locale;
+//import java.util.concurrent.atomic.AtomicBoolean;
 //
 //@Mod.EventBusSubscriber(modid = Invocore.MOD_ID, value =  Dist.CLIENT)
 //public class TestEvent {
 //    private static float aFloat = 0;
 //    private static float bFloat = 0;
+//    private static ModLogger LOGGER = ModLogger.getLogger(TestEvent.class, new AtomicBoolean(true));
 //
 //    @SubscribeEvent
 //    public static void test(RenderGameOverlayEvent.Post event) {
 //        if (event.getType() != RenderGameOverlayEvent.ElementType.ALL) return;
+////        if (!ClientUtil.mC.options.keyAttack.isDown()) return;
+////        ClientUtil.mC.options.keyAttack.setDown(false);
 //        MatrixStack stack = event.getMatrixStack();
-//        int width = event.getWindow().getScaledWidth();
-//        int height = event.getWindow().getScaledHeight();
+//        int width = event.getWindow().getGuiScaledWidth();
+//        int height = event.getWindow().getGuiScaledHeight();
 //        aFloat += event.getPartialTicks();
 //        bFloat += event.getPartialTicks();
 //
@@ -49,13 +52,10 @@
 //        ClientUtil.blitColor(stack, width / 4F, 1, 0, height, new Color(1, 1, 1, 255).getRGB());
 //        ClientUtil.blitColor(stack, ((width / 4F) + width / 2F) - 1, 1, 0, height, new Color(1, 1, 1, 255).getRGB());
 //
-//        ClientUtil.blitColor(stack, width / 4F, width / 4F, height / 5F, height / 8F, new Color(0, 84, 7, 158).getRGB());
-//        IFormattableTextComponent txt = new StringTextComponent("Don't you understand that \n");
-//        txt.mergeStyle(TextFormatting.LIGHT_PURPLE).
-//                appendSibling(new StringTextComponent("I'm trying to help you? Foolish.".toUpperCase(Locale.ROOT))
-//                        .mergeStyle(TextFormatting.AQUA,TextFormatting.BOLD,TextFormatting.OBFUSCATED));
-////        ClientUtil.mC.fontRenderer.drawText(stack, txt, width / 4F, height / 5F, new Color(255,255,255,0).getRGB());
-//        TextUtil.renderText(stack, txt, 0, true,
-//                width / 4F, width / 4F, height / 5F, height / 8F, 0, TextUtil.txtAlignment.MIDDLE);
+//        ClientUtil.blitColor(stack, width / 4F, 104.75F, height / 5F, 32, new Color(0, 84, 7, 158).getRGB());
+//        IFormattableTextComponent txt = new StringTextComponent("Finally, a worthy opponent. Our battle will be legendary, and your blood, a bath.")
+//                .withStyle(TextFormatting.RED);
+//        TextUtil.renderText(stack, txt, true, 0,
+//                width / 4F, 104.75F, height / 5F, 32, 2, TextUtil.txtAlignment.MIDDLE);
 //    }
 //}

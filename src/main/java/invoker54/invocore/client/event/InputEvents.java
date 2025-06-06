@@ -1,7 +1,7 @@
 package invoker54.invocore.client.event;
 
 import invoker54.invocore.Invocore;
-import invoker54.invocore.client.ClientUtil;
+import invoker54.invocore.client.util.ClientUtil;
 import invoker54.invocore.client.keybind.CustomKeybind;
 import invoker54.invocore.client.keybind.KeybindsInit;
 import net.minecraftforge.api.distmarker.Dist;
@@ -27,10 +27,10 @@ public class InputEvents {
 
     private static void onInput(int action, int key){
         //LOGGER.debug("Is there a world?? " + (ClientUtil.mC.level == null));
-        if (ClientUtil.mC.world == null) return;
+        if (ClientUtil.mC.level == null) return;
 
         for (CustomKeybind cKeyBind : KeybindsInit.keyBinds){
-            if (cKeyBind.keyBind.getKey().getKeyCode() == key){
+            if (cKeyBind.keyBind.getKey().getValue() == key){
                 cKeyBind.pressed(action);
             }
         }
