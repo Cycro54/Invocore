@@ -1,7 +1,7 @@
 package invoker54.invocore.client.event;
 
 import invoker54.invocore.Invocore;
-import invoker54.invocore.client.ClientUtil;
+import invoker54.invocore.client.util.ClientUtil;
 import invoker54.invocore.client.keybind.CustomKeybind;
 import invoker54.invocore.client.keybind.KeybindsInit;
 import net.neoforged.api.distmarker.Dist;

@@ -1,4 +1,4 @@
-package invoker54.invocore.client;
+package invoker54.invocore.client.util;
 
 import net.minecraft.client.resources.sounds.AbstractSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;

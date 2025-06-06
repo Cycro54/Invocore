@@ -1,8 +1,9 @@
-package invoker54.invocore.client;
+package invoker54.invocore.client.util;
 
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
+import invoker54.invocore.client.Ticker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -124,6 +125,10 @@ public class ClientUtil {
         RenderSystem.enableCull();
         stack.popPose();
     }
+    public static void blitImage(PoseStack stack, InvoZone renderZone, InvoZone imageZone, float imageScale){
+        blitImage(stack, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(),
+                imageZone.x(), imageZone.width(), imageZone.y(), imageZone.height(), imageScale);
+    }
     public static void blitImage(PoseStack stack, float x0, float width, float y0, float height, float u0, float imageWidth, float v0, float imageHeight, float imageScale){
         Matrix4f lastPos = stack.last().pose();
         float x1 = x0 + width;
@@ -145,6 +150,9 @@ public class ClientUtil {
         BufferUploader.drawWithShader(bufferbuilder.build());
 
         
+    }
+    public static void blitColor(PoseStack stack, InvoZone renderZone, int color){
+        blitColor(stack, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), color);
     }
     public static void blitColor(PoseStack stack, float x0, float width, float y0, float height, int color){
         Matrix4f lastPos = stack.last().pose();
@@ -171,6 +179,9 @@ public class ClientUtil {
 
 //        RenderSystem.enableTexture();
         RenderSystem.disableBlend();
+    }
+    public static void blitItem(PoseStack stack, InvoZone renderZone, ItemStack itemStack) {
+        blitItem(stack, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), itemStack);
     }
     public static void blitItem(PoseStack stack, float x0, float width, float y0, float height, ItemStack itemStack){
         MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
@@ -357,85 +368,40 @@ public class ClientUtil {
     }
 
     public static class Image {
-
         protected ResourceLocation location;
-        protected int u0;
-        protected int v0;
-        protected float imageWidth;
-        protected float imageHeight;
-        public int x0;
-        protected int origWidth;
-        protected int actualWidth;
-        public int y0;
-        protected int actualHeight;
-        protected int origHeight;
-        protected int scale;
+        protected final InvoZone imageZone;
+        protected final InvoZone renderZone;
+        protected float scale;
 
-        public Image(ResourceLocation loc, int u0, float imageWidth, int v0, float imageHeight, int scale){
+        public Image(ResourceLocation loc, float u0, float imageWidth, float v0, float imageHeight, float scale){
             this.location = loc;
-            this.u0 = u0;
-            this.imageWidth = imageWidth;
-            this.actualWidth = (int) imageWidth;
-            this.origWidth = (int) imageWidth;
-            this.v0 = v0;
-            this.imageHeight = imageHeight;
-            this.actualHeight = (int) imageHeight;
-            this.origHeight = (int) imageHeight;
+            this.imageZone = new InvoZone(u0, imageWidth, v0, imageHeight);
+            this.renderZone = new InvoZone(0, imageWidth, 0, imageHeight);
             this.scale = scale;
         }
 
         public void resetScale(){
-            this.actualWidth = this.origWidth;
-            this.actualHeight = this.origHeight;
+            this.renderZone.setWidth(this.imageZone.width());
+            this.renderZone.setHeight(this.imageZone.height());
         }
 
-        public int centerOnImageX(int targWidth){
-            return this.x0 + ((this.actualWidth - targWidth)/2);
+        public InvoZone getRenderZone(){
+            return this.renderZone;
         }
-        public int centerOnImageY(int targHeight){
-            return this.y0 + ((this.actualHeight - targHeight)/2);
-        }
-        public void centerImageX(int x0, int width){
-//            LOGGER.debug("THIS IS MY OLD X ORIGIN: " + this.x0);
-            this.x0 = (x0 + ((width - actualWidth)/2));
-//            LOGGER.debug("THIS IS MY NEW X ORIGIN: " + this.x0);
-        }
-        public void centerImageY(int y0, int height){
-            this.y0 = (y0 + ((height - actualHeight)/2));
+
+        public InvoZone getImageZone(){
+            return this.imageZone;
         }
 
         public boolean isMouseOver(int mouseX, int mouseY){
-            return mouseX >= x0 && mouseX <= (x0 + actualWidth) && mouseY >= y0 && mouseY <= (y0 + actualHeight);
+            return mouseX >= renderZone.x() && mouseX <= (renderZone.x() + renderZone.width())
+                    && mouseY >= renderZone.y() && mouseY <= (renderZone.y() + renderZone.height());
         }
 
-        public int getWidth(){
-            return this.actualWidth;
-        }
-        public int getHeight(){
-            return this.actualHeight;
-        }
-        public int getRight(){return this.x0 + this.getWidth();}
-        public int getDown(){return this.y0 + this.getHeight();}
-
-        public void moveTo(int x0, int y0){
-            this.x0 = x0;
-            this.y0 = y0;
-        }
-
-        public void setImageSize(float imageWidth, float imageHeight){
-            this.imageWidth = imageWidth;
-            this.imageHeight = imageHeight;
-        }
-
-        public void setActualSize(int actualWidth, int actualHeight){
-            this.actualWidth = actualWidth;
-            this.actualHeight = actualHeight;
-        }
-
-        public void RenderImage(PoseStack stack){
-            RenderSystem.setShaderTexture(0, this.location);
-            blitImage(stack, x0, actualWidth, y0, actualHeight, u0, imageWidth, v0, imageHeight, scale);
-            getMinecraft().getTextureManager().release(this.location);
+        public void render(PoseStack stack){
+            RenderSystem.setShaderTexture(0,this.location);
+            blitImage(stack, renderZone, imageZone, scale);
+//            TEXTURE_MANAGER.release(this.location);
         }
     }
 //

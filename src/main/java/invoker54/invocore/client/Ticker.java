@@ -1,6 +1,7 @@
 package invoker54.invocore.client;
 
 import invoker54.invocore.Invocore;
+import invoker54.invocore.client.util.ClientUtil;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
