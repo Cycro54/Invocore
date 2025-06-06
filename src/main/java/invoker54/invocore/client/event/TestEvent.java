@@ -2,8 +2,8 @@
 //
 //import com.mojang.blaze3d.vertex.PoseStack;
 //import invoker54.invocore.Invocore;
-//import invoker54.invocore.client.ClientUtil;
-//import invoker54.invocore.client.TextUtil;
+//import invoker54.invocore.client.util.ClientUtil;
+//import invoker54.invocore.client.util.TextUtil;
 //import net.minecraft.ChatFormatting;
 //import net.minecraft.network.chat.Component;
 //import net.minecraft.network.chat.MutableComponent;
