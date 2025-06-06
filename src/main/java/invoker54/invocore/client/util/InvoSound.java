@@ -1,9 +1,8 @@
-package invoker54.invocore.client;
+package invoker54.invocore.client.util;
 
 import com.mojang.math.Vector3d;
 import invoker54.invocore.Invocore;
 import net.minecraft.client.resources.sounds.AbstractSoundInstance;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.sounds.SoundEvent;
