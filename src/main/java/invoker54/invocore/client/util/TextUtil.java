@@ -198,6 +198,7 @@ public class TextUtil {
         int j = (int)(0 * 255.0F) << 24;
         Font fontrenderer = mC.font;
 
+        RenderSystem.disableDepthTest();
         fontrenderer.drawInBatch(Language.getInstance().getVisualOrder(text), x, y, -1, shadow, matrix4f, irendertypebuffer$impl, true, 0, lightCoords);
 
         irendertypebuffer$impl.endBatch();

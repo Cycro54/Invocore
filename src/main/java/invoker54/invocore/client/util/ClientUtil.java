@@ -1,5 +1,6 @@
 package invoker54.invocore.client.util;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
@@ -15,6 +16,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.network.chat.Component;
@@ -131,6 +133,8 @@ public class ClientUtil {
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
+
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
@@ -141,7 +145,7 @@ public class ClientUtil {
         bufferbuilder.vertex(lastPos, x0, y0, (float)0).uv(u0, v0).endVertex();
         BufferUploader.drawWithShader(bufferbuilder.end());
 
-        
+        RenderSystem.enableDepthTest();
     }
     public static void blitColor(PoseStack stack, InvoZone renderZone, int color){
         blitColor(stack, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), color);
@@ -159,6 +163,7 @@ public class ClientUtil {
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -172,16 +177,22 @@ public class ClientUtil {
 
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
+        RenderSystem.enableDepthTest();
     }
     public static void blitItem(PoseStack stack, InvoZone renderZone, ItemStack itemStack){
         blitItem(stack, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), itemStack);
     }
     public static void blitItem(PoseStack stack, float x0, float width, float y0, float height, ItemStack itemStack){
+        getTextureManager().getTexture(TextureAtlas.LOCATION_BLOCKS).setFilter(false, false);
+        RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
+        RenderSystem.enableBlend();
+        RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.disableDepthTest();
+
         MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
         ItemRenderer renderer = mC.getItemRenderer();
         BakedModel bakedModel = renderer.getModel(itemStack, null, null, 0);
-        RenderSystem.disableDepthTest();
-
         PoseStack posestack = RenderSystem.getModelViewStack();
         posestack.pushPose();
         posestack.translate(x0, y0, (double)(100.0F + renderer.blitOffset));
@@ -203,6 +214,7 @@ public class ClientUtil {
         }
         posestack.popPose();
         RenderSystem.applyModelViewMatrix();
+        RenderSystem.enableDepthTest();
     }
     public static Player getPlayer() {
         return ClientUtil.mC.player;
@@ -333,7 +345,7 @@ public class ClientUtil {
             if (hidden) return;
 
             Font font = mC.font;
-            getTextureManager().getTexture(WIDGETS_LOCATION);
+            RenderSystem.setShaderTexture(0, WIDGETS_LOCATION);
             int i = this.getYImage(this.isHovered);
             i = 46 + i * 20;
 
@@ -420,7 +432,7 @@ public class ClientUtil {
         }
 
         public void render(PoseStack stack){
-            getTextureManager().getTexture(this.location);
+            RenderSystem.setShaderTexture(0, this.location);
             blitImage(stack, renderZone, imageZone, scale);
 //            TEXTURE_MANAGER.release(this.location);
         }
