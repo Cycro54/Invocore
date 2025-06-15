@@ -1,5 +1,6 @@
 package invoker54.invocore.client.util;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
@@ -12,6 +13,8 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -140,6 +143,8 @@ public class ClientUtil {
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
+
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         BufferBuilder bufferbuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
@@ -149,7 +154,7 @@ public class ClientUtil {
         bufferbuilder.addVertex(lastPos, x0, y0, (float)0).setUv(u0, v0);
         BufferUploader.drawWithShader(bufferbuilder.build());
 
-        
+        RenderSystem.enableDepthTest();
     }
     public static void blitColor(PoseStack stack, InvoZone renderZone, int color){
         blitColor(stack, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), color);
@@ -167,6 +172,7 @@ public class ClientUtil {
         RenderSystem.enableBlend();
 //        RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -179,11 +185,19 @@ public class ClientUtil {
 
 //        RenderSystem.enableTexture();
         RenderSystem.disableBlend();
+        RenderSystem.enableDepthTest();
     }
     public static void blitItem(PoseStack stack, InvoZone renderZone, ItemStack itemStack) {
         blitItem(stack, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), itemStack);
     }
     public static void blitItem(PoseStack stack, float x0, float width, float y0, float height, ItemStack itemStack){
+        getTextureManager().getTexture(TextureAtlas.LOCATION_BLOCKS).setFilter(false, false);
+        RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
+        RenderSystem.enableBlend();
+        RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.disableDepthTest();
+
         MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
         ItemRenderer renderer = mC.getItemRenderer();
         BakedModel bakedModel = renderer.getModel(itemStack, null, null, 0);
@@ -212,6 +226,8 @@ public class ClientUtil {
         }
         posestack.popMatrix();
         RenderSystem.applyModelViewMatrix();
+
+        RenderSystem.enableDepthTest();
     }
     public static Vec3 smoothLerp(Vec3 oldPos, Vec3 newPos, boolean useDelta){
 //        LOGGER.debug("PARTIAL TICK IN CLIENT UTIL IS: " + ClientUtil.getWorld().getFrameTime());
@@ -360,11 +376,15 @@ public class ClientUtil {
         String formattedNumber = "";
 
         NumberFormat formatter = new DecimalFormat("#,###.#");
-        power = (int)StrictMath.log10(value);
-        value = value/(Math.pow(10,(power/3)*3));
-        formattedNumber=formatter.format(value);
-        formattedNumber = formattedNumber + suffix.charAt(power/3);
-        return formattedNumber.length()>4 ?  formattedNumber.replaceAll("\\.[0-9]+ ", "") : formattedNumber;
+        power = (int) StrictMath.log10(value);
+        value = value / (Math.pow(10, (power / 3) * 3));
+        formattedNumber = formatter.format(value);
+        formattedNumber = formattedNumber + suffix.charAt(power / 3);
+        return formattedNumber.length() > 4 ? formattedNumber.replaceAll("\\.[0-9]+ ", "") : formattedNumber;
+    }
+
+    public static TextureManager getTextureManager(){
+        return mC.getTextureManager();
     }
 
     public static class Image {
