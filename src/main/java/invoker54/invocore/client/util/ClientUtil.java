@@ -128,18 +128,18 @@ public class ClientUtil {
         RenderSystem.enableCull();
         stack.popPose();
     }
-    public static void blitImage(PoseStack stack, InvoZone renderZone, InvoZone imageZone, float imageScale){
+    public static void blitImage(PoseStack stack, InvoZone renderZone, InvoZone imageZone, float fullImageWidth, float fullImageHeight){
         blitImage(stack, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(),
-                imageZone.x(), imageZone.width(), imageZone.y(), imageZone.height(), imageScale);
+                imageZone.x(), imageZone.width(), imageZone.y(), imageZone.height(), fullImageWidth, fullImageHeight);
     }
-    public static void blitImage(PoseStack stack, float x0, float width, float y0, float height, float u0, float imageWidth, float v0, float imageHeight, float imageScale){
+    public static void blitImage(PoseStack stack, float x0, float width, float y0, float height, float u0, float imageWidth, float v0, float imageHeight, float fullImageWidth, float fullImageHeight){
         Matrix4f lastPos = stack.last().pose();
         float x1 = x0 + width;
         float y1 = y0 + height;
-        u0 /= imageScale;
-        float u1 = u0 + (imageWidth/imageScale);
-        v0 /= imageScale;
-        float v1 = v0 + (imageHeight/imageScale);
+        u0 /= fullImageWidth;
+        float u1 = u0 + (imageWidth/fullImageWidth);
+        v0 /= fullImageHeight;
+        float v1 = v0 + (imageHeight/fullImageHeight);
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -391,13 +391,26 @@ public class ClientUtil {
         protected ResourceLocation location;
         protected final InvoZone imageZone;
         protected final InvoZone renderZone;
-        protected float scale;
+        protected ImageType type = ImageType.Stretch;
+        protected final float fullImageWidth;
+        protected final float fullImageHeight;
 
-        public Image(ResourceLocation loc, float u0, float imageWidth, float v0, float imageHeight, float scale){
+        public enum ImageType{
+            Stretch,
+            Tile,
+            NineSlice
+        }
+
+        public Image(ResourceLocation loc, float u0, float imageWidth, float v0, float imageHeight){
+        this(loc, u0, imageWidth, v0, imageHeight, imageWidth, imageHeight);
+        }
+
+        public Image(ResourceLocation loc, float u0, float imageWidth, float v0, float imageHeight, float fullImageWidth, float fullImageHeight){
             this.location = loc;
             this.imageZone = new InvoZone(u0, imageWidth, v0, imageHeight);
             this.renderZone = new InvoZone(0, imageWidth, 0, imageHeight);
-            this.scale = scale;
+            this.fullImageWidth = fullImageWidth;
+            this.fullImageHeight = fullImageHeight;
         }
 
         public void resetScale(){
@@ -418,9 +431,13 @@ public class ClientUtil {
                     && mouseY >= renderZone.y() && mouseY <= (renderZone.y() + renderZone.height());
         }
 
+        public void setType(ImageType imageType){
+            this.type = imageType;
+        }
+
         public void render(PoseStack stack){
             RenderSystem.setShaderTexture(0,this.location);
-            blitImage(stack, renderZone, imageZone, scale);
+            blitImage(stack, renderZone, imageZone, fullImageWidth, fullImageHeight);
 //            TEXTURE_MANAGER.release(this.location);
         }
     }
