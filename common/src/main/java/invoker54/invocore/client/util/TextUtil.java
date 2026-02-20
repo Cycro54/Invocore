@@ -1,11 +1,13 @@
 package invoker54.invocore.client.util;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.AtomicDouble;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import invoker54.invocore.Invocore;
 import invoker54.invocore.common.ModLogger;
+import invoker54.invocore.common.util.MathUtil;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -13,56 +15,62 @@ import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.FormattedCharSink;
 import net.minecraft.util.StringDecomposer;
 import org.joml.Matrix4f;
+import org.joml.Vector2f;
+import oshi.util.tuples.Pair;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 public class TextUtil {
     public static ModLogger LOGGER = ModLogger.getLogger(TextUtil.class, Invocore.debugMode);
-    private static int black = new java.awt.Color(0,0,0, 255).getRGB();
+    private static int black = new java.awt.Color(0, 0, 0, 255).getRGB();
     //    private static final ModLogger LOGGER = ModLogger.getLogger(TextUtil.class, );
     private static CharacterManagerMixer characterMixer;
 
-    public enum txtAlignment{
-        LEFT,
-        MIDDLE,
-        RIGHT
+    public enum TextAlign {
+        TOP_LEFT,
+        TOP_MIDDLE,
+        TOP_RIGHT,
+        MID_LEFT,
+        MID,
+        MID_RIGHT,
+        BOT_LEFT,
+        BOT_MIDDLE,
+        BOT_RIGHT;
     }
 
-    //deprecated
-    public static void renderText(PoseStack stack, Component text, boolean shadow,
-                                  float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
-        renderText(stack, text, shadow, 0, x0, maxWidth, y0, maxHeight, padding, align, 0.1F, Float.MAX_VALUE);
+    public static TextUtil.TextViewer renderText(PoseStack stack, Component text, InvoZone textZone, InvoText.Properties properties, boolean shouldRender) {
+        return renderText(stack, text, properties.isShadow(), properties.getMaxSplits(), textZone.x(), textZone.width(), textZone.y(), textZone.height(),
+                properties.getPadding(), properties.getTxtAlignment(), properties.getMinTextSize(), properties.getMaxTextSize(), shouldRender);
     }
 
-    public static void renderText(PoseStack stack, Component text, InvoZone textZone, InvoText.Properties properties){
-        renderText(stack, text, properties.isShadow(), properties.getMaxSplits(), textZone.x(), textZone.width(), textZone.y(), textZone.height(),
-                properties.getPadding(), properties.getTxtAlignment(), properties.getMinTextSize(), properties.getMaxTextSize());
+    public static TextUtil.TextViewer renderText(PoseStack stack, Component text, boolean shadow, int maxSplits,
+                                                 InvoZone renderZone, TextAlign alignment, boolean shouldRender) {
+        return renderText(stack, text, shadow, maxSplits, renderZone.x(), renderZone.width(), renderZone.y(),
+                renderZone.height(), 0, alignment, 0.1f, Float.MAX_VALUE, shouldRender);
     }
 
-    public static void renderText(PoseStack stack, Component text, boolean shadow, int maxSplits,
-                                  InvoZone renderZone, txtAlignment alignment){
-        renderText(stack, text, shadow, maxSplits, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), 0, alignment, 0.1f, Float.MAX_VALUE);
-    }
-    public static void renderText(PoseStack stack, Component text, boolean shadow, int maxSplits,
-                                  float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align,
-                                  float minTextSize, float maxTextSize){
+    public static TextUtil.TextViewer renderText(PoseStack stack, Component text, boolean shadow, int maxSplits,
+                                                 float x0, float maxWidth, float y0, float maxHeight, int padding, TextAlign align,
+                                                 float minTextSize, float maxTextSize, boolean shouldRender) {
         if (characterMixer == null) characterMixer = new CharacterManagerMixer();
+        if (text.getString().isEmpty()) return new TextViewer(new ArrayList<>(), new InvoZone(x0, maxWidth, y0, maxHeight), 1, align);
 
-        List<FormattedText> list = new ArrayList<>();
         int textWidth = ClientUtil.getFont().width(text);
 
         //I took this from the if statement
         // && maxHeight > mC.font.lineHeight
-        if (maxSplits != 1) {
-            //Let's try this again.
-            //I have to make it so the text fits PERFECTLY inside the space provided.
-            //What that means is, I have to cut the text at the correct spots.
+        //Let's try this again.
+        //I have to make it so the text fits PERFECTLY inside the space provided.
+        //What that means is, I have to cut the text at the correct spots.
 
 //            //First grab the X Y ratio for the space
 //            double spaceRatio = maxWidth / maxHeight;
@@ -78,87 +86,101 @@ public class TextUtil {
 //            double cutoffPoint = Math.ceil(multiplier * spaceRatio);
 //            double neededSplits = ((double) textWidth /cutoffPoint);
 
-            //First grab the X ratio for the space
-            double xRatio = maxWidth / maxHeight;
-            //Since Y has to be multiples of font.lineHeight, multiply xRatio by it
-            //Solution to find the multiplier for xRatio found here (multiplier = Math.sqrt((textArea/xRatio))):
-            // https://www.symbolab.com/solver/solve-for-equation-calculator
-            double textArea = textWidth * ClientUtil.getFont().lineHeight;
-            double multiplier = Math.sqrt((textArea/xRatio));
-            double cutOffPoint = Math.ceil(xRatio * multiplier);
+        //I have the amount of space it's going to take up
+        //I have the space it's going to occupy
+        //I have to make it so the space it takes up equals the space it will occupy
 
-            //Now for each step of height, xRatio is how much width will be available
+        //First grab the X ratio for the text space (for each 1 height, there is xRatio)
+        double textArea = textWidth * ClientUtil.getFont().lineHeight;
+        double spaceArea = maxWidth * maxHeight;
+        double scalingFactor = Math.sqrt(spaceArea / textArea);
+        double textSize = Math.sqrt((ClientUtil.getFont().lineHeight * spaceArea) / textWidth);
+        double updatedTextSize = MathUtil.clamp(textSize, minTextSize, maxTextSize);
+        double percentChange = updatedTextSize / textSize;
+        double updatedTextWidth = Math.sqrt((textWidth * spaceArea) / ClientUtil.getFont().lineHeight) * percentChange;
+        double cutoffPercent = maxWidth / updatedTextWidth;
+        double cutOffPoint = textWidth * cutoffPercent;
 
-            //MaxWidth is 50
-            //MaxHeight is 8
-            //TxtWidth is 430
+//        LOGGER.error("Space area: " + spaceArea);
+//        LOGGER.error("Text area: " + textArea);
+//        LOGGER.error("Text width: " + textWidth);
+//        LOGGER.error("Text height: " + ClientUtil.getFont().lineHeight);
+//        LOGGER.error("Text Size: " + textSize);
+//        LOGGER.error("percentChange: " + percentChange);
+//        LOGGER.error("Text new width: " + Math.sqrt((textWidth * spaceArea)/ClientUtil.getFont().lineHeight));
+//        LOGGER.error("Cutoff percent: " + cutoffPercent);
+//        LOGGER.error("Full Volume: " + (Math.sqrt((textWidth * spaceArea)/ClientUtil.getFont().lineHeight) * textSize));
+//        LOGGER.error("Adjusted Volume: " + (updatedTextSize * updatedTextWidth));
 
-            //xRatio is 6.25
-            //With font.lineHeight, it's now 56.25
-            //Now how do I find out textSize?
+        double neededSplits = MathUtil.clamp((int) Math.ceil(maxHeight / updatedTextSize), 1, Integer.MAX_VALUE);
+//        double neededSplits = Math.floor(textWidth / cutOffPoint);
 
-//            //and FINALLY, multiply spaceRatio with the multiplier, and that should be the cutoff point!
-            double neededSplits = (textWidth/cutOffPoint);
+        boolean maxSplitExceeded = neededSplits > maxSplits;
 
-            boolean maxSplitExceeded = neededSplits > maxSplits;
+        if (maxSplits != 0 && (maxSplitExceeded || maxSplits < 0 && Math.abs(maxSplits) > neededSplits)) {
+            neededSplits = Math.abs(maxSplits);
+            cutOffPoint = textWidth / neededSplits;
+        }
 
-            if (maxSplits != 0 && (maxSplitExceeded || maxSplits < 0 && Math.abs(maxSplits) > neededSplits)){
-                neededSplits = Math.abs(maxSplits);
-                cutOffPoint = textWidth/neededSplits;
-            }
+//        LOGGER.error("Cut off point? " + cutOffPoint);
+//        LOGGER.error("Needed Splits? " + neededSplits );
+//        LOGGER.error("Old Text size? " + textSize);
+//        LOGGER.error("New Text size? " + updatedTextSize);
 
-            //TODO: Try and include text height too, right now it just accounts for text width
-            double textSize = (maxWidth/cutOffPoint) * ClientUtil.getFont().lineHeight;
-            if (textSize < minTextSize){
-                textWidth = (int) ((maxWidth * neededSplits * ClientUtil.getFont().lineHeight)/minTextSize);
-                cutOffPoint = textWidth/neededSplits;
-            }
-            else if (textSize > maxTextSize){
-                cutOffPoint = Math.ceil((maxWidth * ClientUtil.getFont().lineHeight)/maxTextSize);
-                neededSplits = Math.ceil(textWidth/cutOffPoint);
-            }
-//            LOGGER.warn("Text size: " + ((maxWidth/cutOffPoint) * ClientUtil.getFont().lineHeight));
+
+        //TODO: Try and include text height too, right now it just accounts for text width
+//        double textSizeByWidth = (maxWidth / cutOffPoint) * ClientUtil.getFont().lineHeight;
+//        double textSizeByHeight = maxHeight / (maxWidth / cutOffPoint);
+//        double minSize = Math.min(textSizeByWidth, textSizeByHeight);
+//        double maxSize = Math.max(textSizeByWidth, textSizeByHeight);
+////            LOGGER.error("Min size: " + minSize);
+////            LOGGER.error("Max size: " + maxSize);
 //
-//            LOGGER.warn("X Ratio: " + xRatio);
-//            LOGGER.warn("Text width: " + textWidth);
-//            LOGGER.warn("Needed splits: " + neededSplits);
-//            LOGGER.warn("CutOff Point: " + cutOffPoint);
-
-
-            //Height is 40, splits is 3 (13)
-            //Width is 320, ratio is 72 (4.444)
-            //TextWidth is 3456
-            //TextWidth for each split is max 161
-            //Min text size is 9
-            //text size is 2.5
-
-//          A = ((B/(C/D)) * E;
-
-
-
-//            int cutOffPoint = (int) Math.ceil(textWidth/neededSplits);
-
-            characterMixer.splitLines(text, (int) cutOffPoint, Style.EMPTY, (int) Math.abs(neededSplits), (A, cutShort) -> {
-                list.add(A);
-            });
-
-        }
-        else {
-            list.add(text);
-        }
-
-
-        renderText(stack, list, shadow, x0, maxWidth, y0, maxHeight, padding, align, maxTextSize);
+////            double textSize = 0;
+////            if (neededSplits > 1){
+////                textSize =
+////            }
+//
+//        if (maxSize < minTextSize) {
+//            textWidth = (int) ((maxWidth * neededSplits * ClientUtil.getFont().lineHeight) / minTextSize);
+//            cutOffPoint = textWidth / neededSplits;
+//        }
+//        if (maxSize > maxTextSize) {
+//            cutOffPoint = Math.ceil((maxWidth * ClientUtil.getFont().lineHeight) / maxTextSize);
+//            neededSplits = Math.ceil(textWidth / cutOffPoint);
+//        }
+//        list.addAll((Collection<? extends FormattedText>) ClientUtil.getFont().split(text, (int) cutOffPoint));
+        List<FormattedText> list = new ArrayList<>(ClientUtil.getFont().getSplitter().splitLines(text, (int) Math.floor(cutOffPoint), Style.EMPTY));
+//        List<FormattedText> list = new ArrayList<>();
+//        boolean maxSplitsExceeded = list.size() > neededSplits;
+//        if (maxSplitsExceeded) {
+//            if (((int) ClientUtil.getWorld().getGameTime()) % 40 == 0) {
+//                LOGGER.error("List size: " + list.size());
+//                LOGGER.error("Needed splits: " + neededSplits);
+//            }
+//            if (list.size() - 1 == neededSplits) {
+//                FormattedText combinedText = FormattedText.composite(list.get(list.size() - 2), FormattedText.of(" "), list.get(list.size() - 1));
+//                list = list.subList(0, Math.min((int) neededSplits, list.size() - 2));
+//                list.add(combinedText);
+//            } else {
+//                list = list.subList(0, Math.min((int) neededSplits, list.size() - 1));
+//            }
+//        }
+//        characterMixer.splitLines(text, (int) cutOffPoint, Style.EMPTY, (int) Math.abs(neededSplits), (A, cutShort) -> {
+//            list.add(A);
+//        });
+        return renderText(stack, list, shadow, x0, maxWidth, y0, maxHeight, padding, align, minTextSize, maxTextSize, shouldRender);
     }
 
-    public static void renderText(PoseStack stack, List<FormattedText> textLines, boolean shadow,
-                                  float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align, float maxTextSize) {
+    public static TextUtil.TextViewer renderText(PoseStack stack, List<FormattedText> textLines, boolean shadow,
+                                                 float x0, float maxWidth, float y0, float maxHeight, int padding, TextAlign align,
+                                                 float minTextSize, float maxTextSize, boolean shouldRender) {
         Font font = ClientUtil.getFont();
 
-        stack.pushPose();
+        if (stack != null) stack.pushPose();
 
-        float maxTxtHeight = textLines.size() * (7 + 1);
-        maxTxtHeight += -2 + textLines.size();
+        float maxTxtHeight = textLines.size() * ClientUtil.getFont().lineHeight;
+//        maxTxtHeight += -2 + textLines.size();
 //        LOGGER.info("Max Text Height is " + maxTxtHeight);
 //        maxTxtHeight += (padding * 2);
 //        LOGGER.info("After padding it is " + maxTxtHeight);
@@ -191,61 +213,142 @@ public class TextUtil {
         float widthFillAmount = maxWidth / maxTxtWidth;
 //        LOGGER.info("Width Left is " + widthLeft);
         float scaleFactor = 0;
+        boolean isMiddle = align == TextAlign.TOP_MIDDLE || align == TextAlign.MID || align == TextAlign.BOT_MIDDLE;
 
         if (heightFillAmount < widthFillAmount || heightFillAmount == widthFillAmount) {
+            // LOGGER.error("Height");
 //                LOGGER.info("heightFillAmount was smaller than widthFillAmount");
             //example: maxHeight is 70, txtMaxHeight is 60.
             //That means maxHeight is 1.16 times larger than the txtMaxHeight
-            scaleFactor = ((maxHeight - (align == txtAlignment.MIDDLE ? (padding * 2) : padding)) / maxTxtHeight);
+            scaleFactor = ((maxHeight - (isMiddle ? (padding * 2) : padding)) / maxTxtHeight);
         } else if (heightFillAmount > widthFillAmount) {
+            // LOGGER.error("Width");
 //                LOGGER.info("widthFillAmount was smaller than heightFillAmount");
             //example: maxWidth is 50, txtMaxWidth is 25.
             //That means maxWidth is 2 times larger than the txtMaxWidth
-            scaleFactor = ((maxWidth - (align == txtAlignment.MIDDLE ? (padding * 2) : padding)) / maxTxtWidth);
+            scaleFactor = ((maxWidth - (isMiddle ? (padding * 2) : padding)) / maxTxtWidth);
+        } else {
+            // LOGGER.error("Neither");
         }
 //        LOGGER.debug("What's padding amount to remove? " + ((1F/maxWidth) * padding * 2));
 //        scaleFactor -= ((1F/maxWidth) * padding * 2);
-//        LOGGER.debug("What's the scale factor? " + scaleFactor);
-        scaleFactor = Math.min(scaleFactor, (scaleFactor/font.lineHeight) * maxTextSize);
+//        LOGGER.debug("What's the scaleFactor factor? " + scaleFactor);
+        scaleFactor = (float) MathUtil.clamp(scaleFactor, (minTextSize / font.lineHeight), (maxTextSize / font.lineHeight));
+//        scaleFactor = Math.min(scaleFactor, (scaleFactor/font.lineHeight) * maxTextSize);
 
-        stack.scale(scaleFactor, scaleFactor, scaleFactor);
+        // LOGGER.warn("what's my scaleFactor factor" + scaleFactor);
+        if (shouldRender) {
+            stack.scale(scaleFactor, scaleFactor, scaleFactor);
 
-        //Since I changed the Scale of the text, I have to recalculate the maxTxtHeight and maxTxtWidth
+            //Since I changed the Scale of the text, I have to recalculate the maxTxtHeight and maxTxtWidth
 //        maxTxtHeight = (maxTxtHeight/scaleFactor);
 
-        for (int a = 0; a < textLines.size(); ++a) {
-            FormattedText currText = textLines.get(a);
+//        if (((int)ClientUtil.getWorld().getGameTime()) % 40 == 0) {
+//            LOGGER.error("Text total space: " + (font.lineHeight * textLines.size()));
+//            LOGGER.error("Max Height: " + (maxHeight/scaleFactor));
+//            LOGGER.error("Percent taken : " + ((font.lineHeight * textLines.size())/(maxHeight/scaleFactor)));
+//        }
 
-            float y = y0 / scaleFactor;
-            y = y + ((((maxHeight - (maxTxtHeight * scaleFactor)) / 2F) + (a * font.lineHeight * scaleFactor)) / scaleFactor);
+            for (int a = 0; a < textLines.size(); ++a) {
+                FormattedText currText = textLines.get(a);
+
+                float y = y0 / scaleFactor;
+//            y = y + ((((maxHeight - (maxTxtHeight * scaleFactor)) / 2F) + (a * font.lineHeight * scaleFactor)) / scaleFactor);
+                switch (align) {
+                    case TOP_LEFT:
+                    case TOP_MIDDLE:
+                    case TOP_RIGHT: {
+                        // LOGGER.error("This is ze way");
+                        float textSpace = (font.lineHeight) * a;
+                        y = y + (textSpace);
+                        break;
+                    }
+                    case MID_LEFT:
+                    case MID:
+                    case MID_RIGHT: {
+                        float spaceLeft = (maxHeight / scaleFactor) - (font.lineHeight * textLines.size());
+
+//                     LOGGER.error("Space left: " + (maxHeight - (font.lineHeight * textLines.size())));
+//                    y = y + ((((maxHeight - (maxTxtHeight * scaleFactor)) / 2F) + (a * font.lineHeight * scaleFactor)) / scaleFactor);
+
+                        y = y + ((font.lineHeight) * a) + (spaceLeft / 2);
+                        break;
+                    }
+                    case BOT_LEFT:
+                    case BOT_MIDDLE:
+                    case BOT_RIGHT: {
+                        // LOGGER.error("This is the last way");
+                        float spaceLeft = (maxHeight / scaleFactor) - (font.lineHeight * textLines.size());
+                        y = y + ((font.lineHeight) * a) + (spaceLeft);
+//                    y = y + ((((maxHeight - (maxTxtHeight * scaleFactor)) / 2F) + (a * font.lineHeight * scaleFactor)) / scaleFactor) * 2;
+                        break;
+                    }
+                }
+
 //            LOGGER.debug("max height is: "+ maxHeight);
 //            LOGGER.debug("base empty space is: " + (maxHeight - (maxTxtHeight * scaleFactor)));
 //            LOGGER.debug("resulting y spot is: " + (((maxHeight - (maxTxtHeight * scaleFactor))/2F) + (a * font.lineHeight * scaleFactor)));
 
-            float x = x0;
-            switch (align) {
-                case LEFT:
-                    x = (x) / scaleFactor;
-                    break;
-                case MIDDLE:
-                    x = ((x + ((maxWidth - ((font.width(currText) - (1 - shadowOffset)) * scaleFactor)) / 2F)) / scaleFactor);
+                float x = x0;
+                switch (align) {
+                    case TOP_LEFT:
+                    case MID_LEFT:
+                    case BOT_LEFT:
+                        x = (x) / scaleFactor;
+                        break;
+                    case TOP_MIDDLE:
+                    case MID:
+                    case BOT_MIDDLE:
+                        x = ((x + ((maxWidth - ((font.width(currText) - (1 - shadowOffset)) * scaleFactor)) / 2F)) / scaleFactor);
 //                    LOGGER.debug("Max Width: " + (maxWidth));
 //                    LOGGER.debug("Font Width is now: " + (font.getStringWidth(currText) * scaleFactor));
 //                    LOGGER.debug("What's the empty space: " + ((maxWidth) - (font.getStringWidth(currText) * scaleFactor)));
 //                    LOGGER.debug("Where will the top left be for the text: " + x);
-                    break;
-                case RIGHT:
-                    x = (((x + maxWidth) / scaleFactor) - (((padding) + ((font.width(currText) - (1 - shadowOffset)) * scaleFactor)) / scaleFactor));
-                    break;
-            }
+                        break;
+                    case TOP_RIGHT:
+                    case MID_RIGHT:
+                    case BOT_RIGHT:
+                        x = (((x + maxWidth) / scaleFactor) - (((padding) + ((font.width(currText) - (1 - shadowOffset)) * scaleFactor)) / scaleFactor));
+                        break;
+                }
 
-            renderText(currText, stack, x, y, shadow);
+                renderText(currText, stack, x, y, shadow);
+            }
         }
 
-        stack.popPose();
+        InvoZone textZone = new InvoZone(x0, maxWidth, y0, maxHeight);
+        switch (align) {
+            case TOP_LEFT:
+            case TOP_MIDDLE:
+            case TOP_RIGHT: {
+                textZone.stretch(true);
+                textZone.setDown(textZone.y() + ((font.lineHeight * scaleFactor) * textLines.size()));
+//                float textSpace = (font.lineHeight) * a;
+//                y = y + (textSpace);
+                break;
+            }
+            case MID_LEFT:
+            case MID:
+            case MID_RIGHT: {
+                float spaceLeft = (maxHeight / scaleFactor) - (font.lineHeight * textLines.size());
+                textZone.inflate(0, -spaceLeft / 2);
+                break;
+            }
+            case BOT_LEFT:
+            case BOT_MIDDLE:
+            case BOT_RIGHT: {
+                textZone.stretch(true);
+                float spaceLeft = (maxHeight / scaleFactor) - (font.lineHeight * textLines.size());
+                textZone.setY(y0 + (spaceLeft));
+                break;
+            }
+        }
+
+        if (stack != null) stack.popPose();
+        return new TextViewer(textLines, textZone.stretch(false), scaleFactor, align);
     }
 
-    public static void renderText(FormattedText text, PoseStack stack, float x, float y, boolean shadow){
+    public static void renderText(FormattedText text, PoseStack stack, float x, float y, boolean shadow) {
         MultiBufferSource.BufferSource irendertypebuffer$impl = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
 
 //        boolean flag = !player.isDiscrete();
@@ -257,12 +360,32 @@ public class TextUtil {
         int lightCoords = 15728880;
 
         //float f1 = Minecraft.getInstance().options.getBackgroundOpacity(0.25F);
-        int j = (int)(0 * 255.0F) << 24;
+        int j = (int) (0 * 255.0F) << 24;
         Font fontrenderer = ClientUtil.getFont();
 
-        RenderSystem.disableDepthTest();
-        fontrenderer.drawInBatch(Language.getInstance().getVisualOrder(text), x, y, -1, shadow, matrix4f, irendertypebuffer$impl, Font.DisplayMode.SEE_THROUGH, 0, lightCoords);
+        List<Pair<Style, String>> textList = new ArrayList<>();
+        int offset = 0;
 
+        //I am trying to make it so you can change the opacity of text if it calls for it...
+        text.visit((style, myText) -> {
+//            LOGGER.warn("What's b: " + style);
+            textList.add(new Pair<>(style, myText));
+            return Optional.empty();
+        }, Style.EMPTY);
+
+        RenderSystem.disableDepthTest();
+        for (var formatPair : textList) {
+            TextColor color = formatPair.getA().getColor();
+            if (color == null) color = TextColor.fromRgb(0xFFFFFFFF);
+            FormattedText formattedText = FormattedText.of(formatPair.getB(), formatPair.getA());
+            Color textColor = new Color(color.getValue(), true);
+
+            fontrenderer.drawInBatch(Language.getInstance().getVisualOrder(formattedText),
+                    x + offset, y, textColor.getAlpha() << 24 | textColor.getRGB(), shadow, matrix4f, irendertypebuffer$impl,
+                    Font.DisplayMode.SEE_THROUGH, 0, lightCoords);
+
+            offset += ClientUtil.getFont().width(formattedText);
+        }
         irendertypebuffer$impl.endBatch();
         RenderSystem.enableDepthTest();
     }
@@ -291,12 +414,12 @@ public class TextUtil {
             float averagePoint = cutoffPoint;
             int count = 1;
 
-            while(!complete) {
+            while (!complete) {
                 complete = true;
                 MultilineProcessorMixer multilineProcessor = new MultilineProcessorMixer(cutoffPoint);
 
 
-                for(LineComponent charactermanager$styleoverridingtextcomponent : charactermanager$substyledtext.parts) {
+                for (LineComponent charactermanager$styleoverridingtextcomponent : charactermanager$substyledtext.parts) {
 //                    LOGGER.debug("Remaining Content: " + charactermanager$styleoverridingtextcomponent.contents);
                     boolean flag3 = StringDecomposer.iterateFormatted(
                             charactermanager$styleoverridingtextcomponent.contents, 0,
@@ -309,12 +432,12 @@ public class TextUtil {
                         boolean shouldBreak = shouldReturn || c0 == ' ';
                         flag1 = shouldReturn;
                         FormattedText formattedText = charactermanager$substyledtext.splitAt(i, shouldBreak ? 1 : 0, style);
-//                        LOGGER.warn("Next Split: " + formattedText.getString());
+//                        LOGGER.error("Next Split: " + formattedText.getString());
                         neededSplits--;
                         boolean cutShort = (neededSplits == 0);
-                        if (cutShort){
-                            formattedText = FormattedText.composite(formattedText, FormattedText.of("-",formattedText.visit((fStyle,fString) ->{
-                              return Optional.of(fStyle.withObfuscated(false));
+                        if (cutShort) {
+                            formattedText = FormattedText.composite(formattedText, FormattedText.of("-", formattedText.visit((fStyle, fString) -> {
+                                return Optional.of(fStyle.withObfuscated(false));
                             }, Style.EMPTY).get()));
                         }
                         splitifier.accept(formattedText, cutShort);
@@ -324,11 +447,13 @@ public class TextUtil {
                         break;
                     }
 
+//                    LOGGER.error("Added Length");
                     multilineProcessor.addToOffset(charactermanager$styleoverridingtextcomponent.contents.length());
                 }
                 averagePoint += multilineProcessor.getWidth();
                 count++;
             }
+//            LOGGER.error("TOtal count: " + count);
 
             FormattedText FormattedText1 = charactermanager$substyledtext.getRemainder();
             if (FormattedText1 != null) {
@@ -339,6 +464,7 @@ public class TextUtil {
 //            if (FormattedText1 != null) LOGGER.error("What's the remainder: " + FormattedText1.getString());
 
         }
+
         public class MultilineProcessorMixer implements FormattedCharSink {
             private final float maxWidth;
             private int lineBreak = -1;
@@ -374,10 +500,10 @@ public class TextUtil {
 //                    LOGGER.error("Total is: " + (lvt_4_1_));
                 boolean isSpace = false;
                 switch (codeNumber) {
-                    case 10:
+                    case 10: //\n new line
 //                            LOGGER.info("Finish iteration");
                         return this.finishIteration(lvt_4_1_, style);
-                    case 32:
+                    case 32: //space
 //                            LOGGER.info("This is a space");
                         this.baseSpace = this.lastSpace;
                         this.baseStyle = this.lastSpaceStyle;
@@ -385,16 +511,16 @@ public class TextUtil {
                         this.lastSpace = lvt_4_1_;
                         this.lastSpaceStyle = style;
                         isSpace = true;
-                        if (width < maxWidth || !wordCaptured){
+                        if (width < maxWidth || !wordCaptured) {
                             this.baseShot = 0;
                             this.overShot = 0;
                         }
                         if (hasWord) wordCaptured = true;
-                    default:
+                    default: //char
                         float lvt_5_1_ = CharacterManagerMixer.this.widthProvider.getWidth(codeNumber, style);
 //                            LOGGER.info("1. width(?): " + lvt_5_1_);
 //                            LOGGER.info("2. Previous width(?): " + this.width);
-                        if (!isSpace){
+                        if (!isSpace) {
                             hasWord = true;
                             if (this.width < this.maxWidth) this.baseShot += lvt_5_1_;
                             else this.overShot += lvt_5_1_;
@@ -443,9 +569,9 @@ public class TextUtil {
                 }
             }
 
-            private boolean finishIteration(int p_238388_1_, Style p_238388_2_) {
-                this.lineBreak = p_238388_1_;
-                this.lineBreakStyle = p_238388_2_;
+            private boolean finishIteration(int breakIndex, Style style) {
+                this.lineBreak = breakIndex;
+                this.lineBreakStyle = style;
                 return false;
             }
 
@@ -465,9 +591,188 @@ public class TextUtil {
                 this.offset += p_238387_1_;
             }
 
-            public float getWidth(){
+            public float getWidth() {
                 return this.width;
             }
+        }
+    }
+
+    public record TextViewer(List<FormattedText> textList, InvoZone textZone, float scaleFactor, TextAlign align) {
+        public int getIndex(float x, float y) {
+            int index = 0;
+            int yIndex = 0;
+            float yOffset = y - textZone.y();
+            if (Math.signum(yOffset) != -1) {
+                float yLineSize = yOffset / (ClientUtil.getFont().lineHeight * scaleFactor);
+                yIndex = Math.min((int) Math.floor(yLineSize), textList.size() - 1);
+            }
+
+            for (int a = 0; a < yIndex; a++) {
+                index += textList.get(a).getString().length();
+            }
+
+            FormattedText selectedText = textList.get(yIndex);
+            float fullRowWidth = ClientUtil.getFont().width(selectedText) * scaleFactor;
+            AtomicDouble startX = new AtomicDouble(textZone.x());
+            switch (align) {
+                case TOP_LEFT, MID_LEFT, BOT_LEFT:
+                    break;
+                case TOP_MIDDLE, MID, BOT_MIDDLE:
+                    startX.addAndGet((textZone.width() - fullRowWidth) / 2f);
+                    break;
+                case TOP_RIGHT, MID_RIGHT, BOT_RIGHT:
+                    startX.addAndGet(textZone.width() - fullRowWidth);
+                    break;
+            }
+
+            AtomicInteger subIndex = new AtomicInteger();
+            selectedText.visit((style, currText) -> {
+//                if (ClientUtil.getWorld().getGameTime() % 30 == 0){
+//                LOGGER.error("currText: " + "'" + currText + "'");
+//                }
+
+                for (int a = 0; a < currText.length(); a++) {
+                    int subWidth = ClientUtil.getFont().width(InvoText.literal(currText.charAt(a) + "")
+                            .setStyle(style).getText(true));
+//                    if (subWidth * scaleFactor <= 0) LOGGER.error("NO SPACE");
+                    double beforeX = startX.get();
+                    startX.addAndGet(subWidth * scaleFactor);
+
+                    if (startX.get() > x){
+                        if (MathUtil.percentageLerp(x, beforeX, startX.get()) >= 0.5f) subIndex.getAndIncrement();
+                        break;
+                    }
+
+                    subIndex.getAndIncrement();
+                }
+
+//                if (finished) return Optional.of(1);
+
+                return Optional.empty();
+            }, Style.EMPTY);
+
+            AtomicInteger count = new AtomicInteger();
+            textList.forEach(text -> {
+                text.visit((style, currText) -> {
+                    count.addAndGet(currText.length());
+                    return Optional.empty();
+                }, Style.EMPTY);
+            });
+//            if (ClientUtil.getWorld().getGameTime() % 10 == 0) LOGGER.warn("Count: "+ count.get());
+
+            return index + subIndex.get();
+        }
+
+        public List<InvoZone> getTextZones(int fromIndex, int toIndex) {
+            boolean finished = false;
+            Font font = ClientUtil.getFont();
+
+            int fullIndex = 0;
+            for (FormattedText text : textList) {
+                fullIndex += text.getString().length();
+//                LOGGER.error(text.getString());
+            }
+
+            if (fromIndex > toIndex){
+                int holder = fromIndex;
+                fromIndex = toIndex;
+                toIndex = holder;
+            }
+
+            fromIndex = (int) MathUtil.clamp(fromIndex, 0, fullIndex);
+            toIndex = (int) MathUtil.clamp(toIndex, fromIndex, fullIndex);
+//            LOGGER.warn("What's the fullIndex: " + fullIndex);
+//            LOGGER.warn("What's the fromIndex: " + fromIndex);
+//            LOGGER.warn("What's the toIndex: " + toIndex);
+//            LOGGER.warn("What's the test: " + MathUtil.clamp(500, 0, 400));
+//            if (fromIndex == toIndex) return new ArrayList<>();
+
+            int currIndex = 0;
+
+            List<InvoZone> zoneList = new ArrayList<>();
+
+            float yTextOffset = textZone.y();
+            float singleTextHeight = font.lineHeight * scaleFactor;
+
+            for (FormattedText text : textList) {
+                float startX = textZone.x();
+                float fullRowWidth = font.width(text) * scaleFactor;
+                switch (align) {
+                    case TOP_LEFT, MID_LEFT, BOT_LEFT:
+                        break;
+                    case TOP_MIDDLE, MID, BOT_MIDDLE:
+                        startX += ((textZone.width() - fullRowWidth) / 2f);
+                        break;
+                    case TOP_RIGHT, MID_RIGHT, BOT_RIGHT:
+                        startX += (textZone.width() - fullRowWidth);
+                        break;
+                }
+                float endX = startX;
+                boolean foundStart = false;
+
+                if (fromIndex <= currIndex + text.getString().length()) {
+                    List<Pair<Style, String>> pairList = new ArrayList<>();
+                    text.visit((style, currText) -> {
+                        pairList.add(new Pair<>(style, currText));
+                        return Optional.empty();
+                    }, Style.EMPTY);
+
+                    for (var pair : pairList) {
+                        boolean hasDebug = false;
+
+                        for (int a = 0; a < pair.getB().length(); a++) {
+                            int subWidth = ClientUtil.getFont().width(InvoText.literal(pair.getB().charAt(a) + "")
+                                    .setStyle(pair.getA()).getText());
+
+                            if (!hasDebug){
+                                hasDebug = true;
+//                                LOGGER.error("Does style have bold? " + pair.getA().isBold());
+//                                LOGGER.warn("Sub Width (original): " + font.width(pair.getB().charAt(a)+""));
+//                                LOGGER.warn("Sub Width (text): " + font.width(InvoText.literal(pair.getB().charAt(a) + "").getText()));
+//                                LOGGER.warn("Sub Width (style): " + font.width(InvoText.literal(pair.getB().charAt(a) + "")
+//                                        .setStyle(pair.getA()).getText(true)));
+//                                LOGGER.warn("Sub Width (modified): " + font.width(InvoText.literal(pair.getB().charAt(a) + "")
+//                                        .setStyle(pair.getA().withBold(true)).getText(true)));
+                            }
+
+
+                            if (!foundStart){
+                                if (currIndex >= fromIndex) foundStart = true;
+                                else startX += subWidth * scaleFactor;
+                            }
+
+                            currIndex++;
+                            if (currIndex > toIndex){
+//                                LOGGER.error("What did I finish on: " + pair.getB());
+//                                LOGGER.error("This is working");
+                                finished = true;
+                                break;
+                            }
+                            endX += subWidth * scaleFactor;
+                        }
+
+                        if (finished) break;
+                    }
+                }
+                else {
+//                    LOGGER.error("WHATS THE BAD INDEX: " + currIndex);
+                    currIndex += text.getString().length();
+                }
+
+                if (foundStart || currIndex == fullIndex) {
+//                    LOGGER.error("currIndex = fullIndex " + (currIndex == fullIndex));
+                    zoneList.add(InvoZone.fromPoints(new Vector2f(startX, yTextOffset),
+                            new Vector2f(endX, yTextOffset + singleTextHeight)));
+                }
+
+                if (finished) break;
+
+                yTextOffset += singleTextHeight;
+            }
+//            LOGGER.error("Final index: " + currIndex);
+            if (zoneList.isEmpty()) LOGGER.warn("this is empty!");
+
+            return zoneList;
         }
     }
 }

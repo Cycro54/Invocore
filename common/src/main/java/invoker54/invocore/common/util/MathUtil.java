@@ -1,5 +1,7 @@
 package invoker54.invocore.common.util;
 
+import invoker54.invocore.client.util.InvoZone;
+
 public class MathUtil {
 
     public static double clamp(double value, double min, double max){
@@ -8,6 +10,47 @@ public class MathUtil {
 
     public static float lerp(double value, double min, double max) {
         return (float) (min + value * (max - min));
+    }
+
+    public static double clampLoop(double value, double min, double max) {
+        if (min == max) return max;
+        if (min > max) {
+            double holder = min;
+            min = max;
+            max = holder;
+        }
+
+        double difference = min - (max + 1);
+
+        if (value > max) return clampLoop(value + difference, min, max);
+
+        if (value < min) return clampLoop(value - difference, min, max);
+
+        return value;
+        //-3
+        //-2,-1,0,1,2,3
+    }
+
+    public static InvoZone zoneLerp(double percentage, InvoZone beginZone, InvoZone endZone){
+        InvoZone lerpZone = beginZone.copy();
+
+        //First middle
+        double middleX = MathUtil.lerp(percentage, beginZone.middleX(), endZone.middleX());
+        double middleY = MathUtil.lerp(percentage, beginZone.middleY(), endZone.middleY());
+        double width = MathUtil.lerp(percentage, beginZone.width(), endZone.width());
+        double height = MathUtil.lerp(percentage, beginZone.height(), endZone.height());
+
+        lerpZone.setWidth((float) width).setHeight((float) height).centerX((float) middleX).centerY((float) middleY);
+        return lerpZone;
+    }
+
+    public static double percentageLerp(double value, double begin, double end){
+        double maxDistance = end - begin;
+        double valueDistance = value - begin;
+
+        if (maxDistance == 0) maxDistance = 1;
+
+        return valueDistance/maxDistance;
     }
 
     public static int randomInt(int min, int max){

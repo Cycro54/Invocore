@@ -1,9 +1,10 @@
-accessWidener v2 named 
-accessible field net/minecraft/client/StringSplitter widthProvider Lnet/minecraft/client/StringSplitter$WidthProvider;
-accessible class net/minecraft/client/StringSplitter$FlatComponents
-accessible field net/minecraft/client/StringSplitter$FlatComponents parts Ljava/util/List; # parts
-accessible field net/minecraft/client/StringSplitter$LineComponent contents Ljava/lang/String; # contents
-accessible field net/minecraft/client/StringSplitter$LineComponent style Lnet/minecraft/network/chat/Style; # style
+accessWidener v2 named
+transitive-accessible field net/minecraft/client/StringSplitter widthProvider Lnet/minecraft/client/StringSplitter$WidthProvider;
+transitive-accessible class net/minecraft/client/StringSplitter$FlatComponents
+transitive-accessible field net/minecraft/client/StringSplitter$FlatComponents parts Ljava/util/List; # parts
+transitive-accessible class net/minecraft/client/StringSplitter$LineComponent # contents
+transitive-accessible field net/minecraft/client/StringSplitter$LineComponent contents Ljava/lang/String; # contents
+transitive-accessible field net/minecraft/client/StringSplitter$LineComponent style Lnet/minecraft/network/chat/Style; # style
 
-accessible field net/minecraft/client/renderer/texture/TextureAtlas texturesByName Ljava/util/Map; #textures in atlas
-accessible field net/minecraft/client/renderer/texture/TextureManager byPath Ljava/util/Map; #Abstract textures in TextureManager
+transitive-accessible field net/minecraft/client/renderer/texture/TextureAtlas texturesByName Ljava/util/Map; #textures in atlas
+transitive-accessible field net/minecraft/client/renderer/texture/TextureManager byPath Ljava/util/Map; #Abstract textures in TextureManager

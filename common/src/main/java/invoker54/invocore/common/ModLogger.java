@@ -2,6 +2,7 @@ package invoker54.invocore.common;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.StackLocatorUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,12 @@ public class ModLogger {
 
     public static ModLogger getLogger(Class<?> modClass, AtomicBoolean debugMode){
         ModLogger newLogger = new ModLogger(LogManager.getLogger(modClass), debugMode);
+        loggers.add(newLogger);
+        return newLogger;
+    }
+
+    public static ModLogger getLogger(AtomicBoolean debugMode){
+        ModLogger newLogger = new ModLogger(LogManager.getLogger(StackLocatorUtil.getCallerClass(2)), debugMode);
         loggers.add(newLogger);
         return newLogger;
     }

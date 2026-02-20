@@ -3,10 +3,12 @@ plugins {
 }
 
 loom {
-    accessWidenerPath = project(":common").file("${access_widener_path}")
+//    accessWidenerPath = project(":common").file("${access_widener_path}")
 
     forge {
         mixinConfig "invocore.mixins.json"
+        convertAccessWideners = true
+        accessWidenerPath = (project(":common").file("${access_widener_path}"))
     }
 }
 

@@ -5,6 +5,9 @@ import invoker54.invocore.client.util.ClientUtil;
 import invoker54.invocore.client.util.InvoZone;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
+import org.joml.Vector2f;
+
+import java.awt.*;
 
 public class InvoImageItem extends InvoImage {
     public static final String ITEM_IMAGE = "ITEM_IMAGE";
@@ -38,12 +41,16 @@ public class InvoImageItem extends InvoImage {
 
     @Override
     public void render(PoseStack stack, InvoZone renderZone) {
+        if (this.mainZone.isZero()) return;
+
+        this.rotate(stack, renderZone);
         ClientUtil.blitItem(stack, renderZone, this.stack);
+        stack.popPose();
     }
 
     @Override
     public CompoundTag serializeNBT() {
-        CompoundTag tag = new CompoundTag();
+        CompoundTag tag = super.serializeNBT();
         CompoundTag stackTag = new CompoundTag();
         this.stack.save(stackTag);
         tag.put(STACK_ITEMSTACK, stackTag);
@@ -52,6 +59,7 @@ public class InvoImageItem extends InvoImage {
 
     @Override
     public void deserializeNBT(CompoundTag tag) {
+        super.deserializeNBT(tag);
         this.stack = ItemStack.of(tag.getCompound(STACK_ITEMSTACK));
     }
 }

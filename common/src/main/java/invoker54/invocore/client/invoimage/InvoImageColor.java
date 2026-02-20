@@ -1,9 +1,11 @@
 package invoker54.invocore.client.invoimage;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import invoker54.invocore.client.util.ClientUtil;
 import invoker54.invocore.client.util.InvoZone;
 import net.minecraft.nbt.CompoundTag;
+import org.joml.Vector2f;
 
 import java.awt.*;
 
@@ -39,18 +41,26 @@ public class InvoImageColor extends InvoImage {
 
     @Override
     public void render(PoseStack stack, InvoZone renderZone) {
-        ClientUtil.blitColor(stack, renderZone, this.color.getRGB());
+        if (renderZone.isZero()){
+//            LOGGER.error("Mainzone is zero: ");
+            return;
+        }
+
+        this.rotate(stack, renderZone);
+        ClientUtil.blitColor(stack, renderZone.copy().absolute(), this.color.getRGB());
+        stack.popPose();
     }
 
     @Override
     public CompoundTag serializeNBT() {
-        CompoundTag tag = new CompoundTag();
+        CompoundTag tag = super.serializeNBT();
         tag.putInt(COLOR_INT, this.getColor().getRGB());
         return tag;
     }
 
     @Override
     public void deserializeNBT(CompoundTag tag) {
+        super.deserializeNBT(tag);
         this.color = new Color(tag.getInt(COLOR_INT));
     }
 }
