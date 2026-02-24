@@ -4,13 +4,11 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import dev.architectury.event.events.client.ClientGuiEvent;
 import invoker54.invocore.client.invoimage.InvoImage;
 import invoker54.invocore.client.invoimage.InvoImageTexture;
-import invoker54.invocore.client.util.ClientUtil;
-import invoker54.invocore.client.util.InvoText;
-import invoker54.invocore.client.util.InvoZone;
-import invoker54.invocore.client.util.TextUtil;
+import invoker54.invocore.client.util.*;
 import invoker54.invocore.common.ModLogger;
 import invoker54.invocore.common.util.MathUtil;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.util.Mth;
 import org.joml.Vector2f;
 
@@ -27,7 +25,7 @@ public class TestEventCommon implements ClientGuiEvent.RenderHud {
 
     @Override
     public void renderHud(GuiGraphics guiGraphics, float tickDelta) {
-        if (!ClientUtil.getMinecraft().isPaused() && ClientUtil.getMinecraft().screen == null) aFloat += tickDelta/2;
+        if (!ClientUtil.getMinecraft().isPaused() && ClientUtil.getMinecraft().screen == null) aFloat += tickDelta / 2;
         if (!ClientUtil.getMinecraft().isPaused() && ClientUtil.getMinecraft().screen == null) bFloat += tickDelta;
         float resulta = (float) (Math.sin(aFloat / 32f) + 1) / 2F;
         float resultb = (float) (Math.cos(bFloat / 32f) + 1) / 2F;
@@ -35,7 +33,6 @@ public class TestEventCommon implements ClientGuiEvent.RenderHud {
         PoseStack stack = guiGraphics.pose();
         float width = guiGraphics.guiWidth();
         float height = guiGraphics.guiHeight();
-//
 //        InvoZone colorZone = new InvoZone(0, width, 0, height);
 //        ClientUtil.blitColor(stack, colorZone, new Color(94, 94, 94, 142).getRGB());
 ////            ClientUtil.blitColor(stack, 0, 64, 0, 64, new Color(1, 1, 1, 123).getRGB());
@@ -180,33 +177,42 @@ public class TestEventCommon implements ClientGuiEvent.RenderHud {
 //        image.render(stack);
 //        InvoImage.fromColor(Color.RED).render(stack, new InvoZone(64, 80, 80, 64));
         InvoZone paddedZone = new InvoZone(0, guiGraphics.guiWidth(), 0, guiGraphics.guiHeight());
-        paddedZone = paddedZone.copy().inflate(-paddedZone.width()/4, -paddedZone.height()/4).center(paddedZone);
-        paddedZone.setWidth(96);
+        paddedZone = paddedZone.copy().inflate(-paddedZone.width() / 4, -paddedZone.height() / 4).center(paddedZone);
+        paddedZone.setWidth(48);
 
 //        String s = "Lorem &lipsum dolor sit amet, consectetur adipiscing elit. Aliquam eget metus ultrices, interdum neque non, sodales diam. Morbi hendrerit urna lorem, sed faucibus nisl venenatis a. Cras rutrum felis accumsan lacinia tempus. Nunc egestas, magna ac sagittis vehicula, neque quam ultricies augue, ut gravida quam ipsum at est.";
-      String s = "Lorem&l ipsum dolor sit amet, consectetur adipiscing elit. ac sagittis vehicula, neque quam ultricies augue, ut gravida quam ipsum at est.";
+//      String s = "Lorem&l ipsum dolor sit amet, consectetur adipiscing elit. ac sagittis vehicula, neque quam ultricies augue, ut gravida quam ipsum at est.";
+        String s = "12345678                           ";
         InvoImage.fromColor(Color.BLACK).render(stack, paddedZone);
         guiGraphics.drawWordWrap(ClientUtil.getFont(), InvoText.literal(s).getText(false),
-                (int)paddedZone.x(), (int)paddedZone.y(), (int)paddedZone.width(),  new Color(61, 135, 135,233).getRGB());
+                (int) paddedZone.x(), (int) paddedZone.y(), (int) paddedZone.width(), new Color(61, 135, 135, 233).getRGB());
 
 //        InvoImage.fromColor(Color.RED).render(stack, paddedZone.copy().setWidth(30).setHeight(10));
-        InvoText text = new InvoText.Properties().setShadow(false).setTxtAlignment(TextUtil.TextAlign.MID_RIGHT)
+        InvoText text = new InvoText.Properties().setTxtAlignment(TextUtil.TextAlign.BOT_LEFT)
                 .setShadow(false).setTextSize(9).text(InvoText.literal(s));
-        TextUtil.TextViewer textViewer = text.getTextViewer(true, paddedZone);
-        InvoZone textZone = textViewer.textZone();
+
+        TextViewer textViewer = text.getTextViewer(true, paddedZone);
+        InvoZone textZone = textViewer.getZoneCopy();
         InvoImage.fromColor(new Color(255, 0, 0, 86)).render(stack, textZone);
-        text.renderWithActualZone(stack, true, paddedZone, textZone.setDown(paddedZone.down()));
-        InvoZone pointZone = InvoZone.fromPoint(new Vector2f(MathUtil.lerp(resultb, textZone.right()-3, textZone.right()),
+//        text.renderWithActualZone(stack, paddedZone, textZone.setDown(paddedZone.down()), true);
+        InvoZone pointZone = InvoZone.fromPoint(new Vector2f(MathUtil.lerp(resultb, textZone.x()-1, textZone.right()+1),
 //        InvoZone pointZone = InvoZone.fromPoint(new Vector2f(textZone.right(),
-                textZone.down())).inflate(1);
+                textViewer.getLineY(0))).inflate(0.5f);
 //                MathUtil.lerp(resulta, textZone.y(), textZone.down()))).inflate(1);
 //        MathUtil.lerp(resulta, textZone.y(), textZone.down())
-        List<InvoZone> zoneList = textViewer.getTextZones(0, textViewer.getIndex(pointZone.middleX(), pointZone.middleY()));
+        InvoImage.fromColor(Color.green).render(stack, textViewer.getTextZone(textViewer.getMaxDisplayIndex()).setWidth(29));
+        List<InvoZone> zoneList = textViewer.getTextZones(0, textViewer.getDisplayIndex(pointZone.middleX(), pointZone.middleY()));
 //                            if (ClientUtil.getWorld().getGameTime() % 40 == 0) {
 //                                LOGGER.error("What's index: " + textViewer.getIndex(pointZone.middleX(), pointZone.middleY()));
 //                            }
+        text.render(stack, textViewer.getZoneCopy(), true);
+//        if (ClientUtil.getWorld().getGameTime() % 10 == 0) {
+//            LOGGER.error("What's index? " + textViewer.getIndex(pointZone.middleX(), pointZone.middleY()));
+//        }
+//        InvoImage.fromColor(Color.green).render(stack, textViewer.getTextZone(textViewer.getMaxIndex()).setWidth(29));
+
         zoneList.forEach(zone -> {
-                    InvoImage.fromColor(new Color(244, 84, 244, 121)).render(stack, zone);
+                    InvoImage.fromColor(new Color(244, 84, 244, 121)).render(stack, zone.minWidth(2));
 
 //                    if (ClientUtil.getWorld().getGameTime() % 10 == 0) {
 //                    }
@@ -214,11 +220,15 @@ public class TestEventCommon implements ClientGuiEvent.RenderHud {
         );
         InvoImage.fromColor(Color.BLUE).render(stack, pointZone);
 
-        text.render(stack, paddedZone.copy().setX(paddedZone.right()));
-        if (ClientUtil.getWorld().getGameTime() % 10 == 0){
+//        text.render(stack, paddedZone.copy().setX(paddedZone.right()));
+//        if (ClientUtil.getWorld().getGameTime() % 10 == 0){
+//            LOGGER.error("list size: " + textViewer.textList().size());
+//            textViewer.textList().forEach(thing ->{
+//                LOGGER.error("is empty? " + thing.getString().isEmpty() + " : string: '" + thing.getString()+"'");
+//            });
 //            LOGGER.error("index: " + textViewer.getIndex(pointZone.middleX(), pointZone.middleY()));
 //            LOGGER.error("Text length: " + s.length());
-        }
+//        }
 //        new InvoText.Properties().setShadow(false).setTxtAlignment(TextUtil.TextAlign.MID).setShadow(false).setTextSize(8)
 //                .text(InvoText.literal(s)).render(stack, paddedZone);
 

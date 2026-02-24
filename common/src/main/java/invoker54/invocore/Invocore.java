@@ -4,8 +4,11 @@ import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.event.events.client.ClientReloadShadersEvent;
 import invoker54.invocore.client.event.TestEventCommon;
 import invoker54.invocore.client.invoimage.InvoImage;
+import invoker54.invocore.client.util.ClientUtil;
 import invoker54.invocore.common.ModLogger;
 import invoker54.invocore.init.KeybindInit;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.core.registries.Registries;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -19,7 +22,7 @@ public final class Invocore {
     }
 
     public static void clientInit(){
-        ClientGuiEvent.RENDER_HUD.register(new TestEventCommon());
+//        ClientGuiEvent.RENDER_HUD.register(new TestEventCommon());
         KeybindInit.init();
         ClientReloadShadersEvent.EVENT.register((provider, sink) ->
                 InvoImage.getAllTextures(true));

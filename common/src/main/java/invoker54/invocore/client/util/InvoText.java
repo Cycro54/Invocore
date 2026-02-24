@@ -46,10 +46,6 @@ public class InvoText {
         return this.properties;
     }
 
-    public MutableComponent getText() {
-        return this.getText(false);
-    }
-
     public MutableComponent getText(boolean keepFormatCodes) {
         return StringUtil.formatText(this, keepFormatCodes).setStyle(this.getStyle()).textComponent;
     }
@@ -79,7 +75,7 @@ public class InvoText {
     }
 
     public InvoText append(InvoText text) {
-        this.textComponent.append(text.getText());
+        this.textComponent.append(text.getText(true));
         return this;
     }
 
@@ -117,24 +113,21 @@ public class InvoText {
         return this.textComponent.getVisualOrderText();
     }
 
-    public TextUtil.TextViewer getTextViewer(boolean keepFormatCodes, InvoZone textZone) {
+    public TextViewer getTextViewer(boolean keepFormatCodes, InvoZone textZone) {
         Properties props = this.getProperties();
-        return TextUtil.renderText(null, this.getText(keepFormatCodes), textZone, props, false);
+        return new TextViewer(this.getText(keepFormatCodes).getString(), props, textZone, false, keepFormatCodes);
     }
 
-    public void renderWithActualZone(PoseStack stack, boolean keepFormatCodes, InvoZone textZone, InvoZone renderZone) {
-        InvoZone actualTextZone = TextUtil.renderText(null, this.getText(keepFormatCodes), textZone,
-                this.getProperties(), false).textZone();
-        this.render(stack, keepFormatCodes, textZone.changeRelativeMultiply(actualTextZone, renderZone));
-    }
+//    public void renderWithActualZone(PoseStack stack, InvoZone textZone, InvoZone renderZone, boolean keepFormatCodes) {
+//        InvoZone actualTextZone = TextUtil.renderText(null, this.getText(keepFormatCodes), textZone,
+//                this.getProperties(), false).textZone();
+//        this.render(stack, textZone.changeRelativeMultiply(actualTextZone, renderZone), keepFormatCodes);
+//    }
 
-    public void render(PoseStack stack, InvoZone textZone) {
-        this.render(stack, false, textZone);
-    }
-
-    public void render(PoseStack stack, boolean keepFormatCodes, InvoZone textZone) {
+    public void render(PoseStack stack, InvoZone textZone, boolean keepFormatCodes) {
         Properties props = this.getProperties();
-        TextUtil.renderText(stack, this.getText(keepFormatCodes), textZone, props, true);
+
+        TextUtil.renderText(stack, textZone, this.getText(keepFormatCodes), props, true);
     }
 
     public void setProperties(Properties properties) {
@@ -157,6 +150,10 @@ public class InvoText {
         this.getProperties().deserializeNBT(tag.getCompound(PROPERTIES));
     }
 
+    public TextViewer.RenderInfo getRenderInfo(InvoZone textZone, boolean keepFormatCodes) {
+        return TextUtil.renderText(null, textZone, this.getText(keepFormatCodes), this.getProperties(), false);
+    }
+
     public static class Properties {
         public static final String IS_SHADOW_BOOL = "IS_SHADOW_BOOL";
         public static final String MAX_SPLITS_INT = "MAX_SPLITS_INT";
@@ -171,6 +168,10 @@ public class InvoText {
         private TextUtil.TextAlign TextAlign = TextUtil.TextAlign.MID_LEFT;
         private float maxTextSize = 27F;
         private float minTextSize = 5F;
+
+        public InvoText text(String text) {
+            return this.text(InvoText.literal(text));
+        }
 
         public InvoText text(InvoText text) {
             text.setProperties(this);

@@ -1,6 +1,7 @@
 package invoker54.invocore.common.util;
 
 import invoker54.invocore.Invocore;
+import invoker54.invocore.client.util.ClientUtil;
 import invoker54.invocore.client.util.InvoText;
 import invoker54.invocore.common.ModLogger;
 import net.minecraft.ChatFormatting;
@@ -48,19 +49,29 @@ public class StringUtil {
     public static InvoText formatText(InvoText preFormattedText, boolean keepFormatCodes) {
         String originalText = preFormattedText.getString();
         Matcher matcher = FORMATTING_PATTERN.matcher(originalText);
+        if (ClientUtil.getWorld().getGameTime() % 30 == 0) {
+//            LOGGER.error("Starting!");
+        }
 
-        InvoText replacementText = InvoText.literal("");
-        replacementText.copyProperties(preFormattedText);
+        InvoText formattedText = InvoText.literal("");
+        formattedText.copyProperties(preFormattedText);
         Style style = Style.EMPTY;
         int offset = 0;
 
         while (matcher.find()) {
             //If the codeString has a forward slash, skip it.
-            if (matcher.start() != 0 && (originalText.charAt(matcher.start() - 1) == '/')) continue;
+            if (matcher.start() != 0 && (originalText.charAt(matcher.start() - 1) == '/')){
+                if (!keepFormatCodes){
+                    offset--;
+                    originalText = new StringBuilder(originalText).deleteCharAt(matcher.start() - 1).toString();
+                }
+                continue;
+            }
 
+            //prevString is all the text behind the current match and in front of the last match ('abcd'<-'&l')
             String prevString = originalText.substring(offset, Math.max(0, matcher.start()));
             if (!prevString.isEmpty()){
-                replacementText.append(InvoText.literal(prevString).getText().withStyle(style));
+                formattedText.append(InvoText.literal(prevString).getText(true).withStyle(style));
                 offset += prevString.length();
             }
 
@@ -96,9 +107,12 @@ public class StringUtil {
 
         String prevString = originalText.substring(offset);
         if (!prevString.isEmpty()){
-            replacementText.append(InvoText.literal(prevString).getUnformattedText().withStyle(style));
+            formattedText.append(InvoText.literal(prevString).getUnformattedText().withStyle(style));
         }
+//        if (ClientUtil.getWorld().getGameTime() % 30 == 0) {
+//            LOGGER.error("Keep format? "+ keepFormatCodes +" What's the final string: " + formattedText.getString());
+//        }
 
-        return replacementText;
+        return formattedText;
     }
 }

@@ -8,6 +8,7 @@ import invoker54.invocore.client.util.ClientUtil;
 import invoker54.invocore.client.util.InvoZone;
 import invoker54.invocore.common.ModLogger;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.*;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;

@@ -374,7 +374,7 @@ public class InvoZone {
     }
 
     //TODO: Split into pieces, reuse code!
-    public InvoZone grid(float pointX, float pointY){
+    public InvoZone gridPoint(float pointX, float pointY){
         float distance = pointX - this.x();
         int steps = (int) (distance/this.width());
         if (steps < 0) steps -= 1;
@@ -386,6 +386,11 @@ public class InvoZone {
         this.shiftXY(0, steps * this.height());
 
         return this;
+    }
+
+    public InvoZone gridShift(float xMultiplier, float yMultiplier){
+        return this.shiftXY(this.width() * xMultiplier,
+                this.height() * yMultiplier);
     }
 
     public ScreenRectangle rect(){
