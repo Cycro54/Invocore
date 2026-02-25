@@ -1,5 +1,6 @@
 package invoker54.invocore.client.util;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import invoker54.invocore.Invocore;
 import invoker54.invocore.common.ModLogger;
 import invoker54.invocore.common.util.MathUtil;
@@ -7,6 +8,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.StringDecomposer;
+import net.minecraft.world.InteractionHand;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
@@ -105,32 +107,150 @@ public class TextViewer {
         return startX;
     }
 
+    public RenderInfo getRenderInfo(){
+       return this.textProperties.text(this.originalText).getRenderInfo(this.textZone, this.keepFormatCodes);
+    }
+
+    public void refreshInfo() {
+        RenderInfo info = getRenderInfo();
+        this.displayLines.clear();
+        this.displayLines.addAll(info.textLines);
+        this.scaleFactor = info.scaleFactor;
+        this.indexSkipList.clear();
+
+        int offset = -1;
+        StringBuilder fullDisplayString = new StringBuilder();
+        this.charWidthList.clear();
+        for (var text : this.displayLines) {
+            this.charWidthList.add(getCharWidthList(text));
+            fullDisplayString.append(text.getString());
+            fullDisplayString.append("\n");
+            if (offset != -1){
+                char c = this.originalText.charAt(offset + 1);
+                if (c == '\n' || c == ' '){
+                    offset++;
+                    this.indexSkipList.add(0);
+                }
+                else this.indexSkipList.add(-1);
+            }
+            offset += text.getString().length();
+        }
+        if (offset < originalText.length()-1){
+            this.displayLines.add(FormattedText.EMPTY);
+            this.charWidthList.add(getCharWidthList(FormattedText.of("")));
+            this.indexSkipList.add(0);
+            fullDisplayString.append("\n");
+            offset++;
+            LOGGER.warn("Adding an extra line...");
+        }
+        LOGGER.warn("Offset: " + offset);
+        LOGGER.warn("original length thing: " + (originalText.length()-1));
+        LOGGER.warn("Formatted length: " + fullDisplayString.length());
+        this.maxDisplayIndex = fullDisplayString.length()-1;
+    }
+
+    public void render(PoseStack stack){
+        TextUtil.renderText(stack, this.displayLines, textProperties, this.getZoneCopy(), true);
+    }
+
+    public void updateText(String updatedText){
+        originalText = updatedText;
+        this.refreshInfo();
+    }
+
+    public InvoZone getTextZone(int index) {
+        return this.getTextZones(index, index).get(0);
+    }
+
+    public int getMaxDisplayIndex(){
+        return this.maxDisplayIndex;
+    }
+
+    public int getMaxStringIndex(){
+        return this.originalText.length();
+    }
+
+    public int getDisplayLineCount(){
+        return this.displayLines.size();
+    }
+
+    public String getOriginalText(){
+        return this.originalText;
+    }
+
+    public int getDisplayIndex(int stringIndex){
+        if (stringIndex == 0) return 0;
+        if (stringIndex == this.getMaxStringIndex()) return this.getMaxDisplayIndex();
+        //How to convert string into display index???
+
+        //ab__  string
+        //ab\n \n display (skip: 1)
+
+        //string index is 3
+        //The converted index should be 2
+
+        //Iterate through the display list, and between each text do the skiplist.
+        //Iteration index = -1
+        //display index = -1
+        //stringIndex = 3
+
+        //iteration = 2;
+        //displayIndex = 2;
+        //iteration = 3;
+        //next loop
+        //iteration = 4
+        //I have to add 1 to display index
+
+        int iterationIndex = -1;
+        int displayIndex = -1;
+        for (int a = 0; a < this.charWidthList.size(); a++) {
+            List<Pair<Character, Float>> displayLine = this.charWidthList.get(a);
+            iterationIndex += displayLine.size();
+            if (stringIndex <= iterationIndex){
+                displayIndex += displayLine.size() - (iterationIndex - stringIndex);
+                return displayIndex;
+            }
+
+            displayIndex += displayLine.size();
+            iterationIndex += this.indexSkipList.get(a);
+            if (stringIndex <= iterationIndex){
+                if (iterationIndex - ((this.indexSkipList.get(a)/2)) <= stringIndex) displayIndex++;
+                return displayIndex;
+            }
+        }
+
+        LOGGER.warn("[Invocore] This index shouldn't be reached! " + displayIndex);
+        return displayIndex;
+    }
+
     //There are 2 different indexes: String index, and display index.
     public int getStringIndex(int displayIndex){
         //123n    456n1n
         //123_ __n456n1
+        LOGGER.debug("Display index: " + displayIndex);
 
         int lineCount = 0;
-        int displayCount = 0;
+        int displayCount = -1;
         //123_n456_n7
         //123n 456n 7n
 
         for (int a = 0; a < this.displayLines.size(); a++){
+            LOGGER.debug("(1) Display Count:"+displayCount);
             displayCount += this.charWidthList.get(a).size();
-            if (displayIndex < displayCount) break;
+            LOGGER.debug("(2) Display Count:"+displayCount);
+            if (displayIndex <= displayCount) break;
             lineCount++;
         }
+
+        LOGGER.debug("Line Count:" + lineCount);
 
         for (int a = 0; a < lineCount; a++){
             displayIndex += this.indexSkipList.get(a);
         }
 
-        displayIndex = (int) MathUtil.clamp(displayIndex, 0, getMaxOriginalIndex() + 1);
+//        displayIndex = (int) MathUtil.clamp(displayIndex, 0, getMaxOriginalIndex());
         return displayIndex;
     }
-    //Each display line will most likely be a different index (except usually the first display line.)
-    //Each display line I will add 1 space, that will shift each index on the next display line by 1,
-    //so I have to add -1 to the skipindex count
 
     public int getDisplayIndex(float pointX, float pointY){
         Font font = ClientUtil.getFont();
@@ -149,7 +269,10 @@ public class TextViewer {
         float startX = this.getStartX(yIndex);
 
         for (var charWidth : selectedPair){
-            if (charWidth.getRight() == 0) break;
+            if (charWidth.getRight() == 0){
+                index++;
+                break;
+            }
             if (pointX > startX + (charWidth.getRight()/2f)){
                 startX += charWidth.getRight();
                 index++;
@@ -168,113 +291,6 @@ public class TextViewer {
         return index;
     }
 
-    public RenderInfo getRenderInfo(){
-       return this.textProperties.text(this.originalText).getRenderInfo(this.textZone, this.keepFormatCodes);
-    }
-
-    public void refreshInfo() {
-        RenderInfo info = getRenderInfo();
-        this.displayLines.clear();
-        this.displayLines.addAll(info.textLines);
-        this.scaleFactor = info.scaleFactor;
-
-        StringBuilder fullDisplayString = new StringBuilder();
-        this.maxDisplayIndex = -1;
-        this.charWidthList.clear();
-        for (var text : this.displayLines) {
-            this.charWidthList.add(getCharWidthList(text));
-            this.maxDisplayIndex += text.getString().length() + 1;
-            fullDisplayString.append(text.getString());
-            fullDisplayString.append("\n");
-        }
-
-        Iterator<Integer> originalTextIterator = this.originalText.chars().iterator();
-//        LOGGER.warn("Original size: " + this.originalText.length());
-        Iterator<Integer> displayTextIterator = fullDisplayString.chars().iterator();
-//        LOGGER.warn("Display size: " + fullDisplayString.length());
-//        LOGGER.error("original text:" + this.originalText);
-//        LOGGER.error("modified text:" + fullDisplayString);
-
-        char originalChar;
-        char displayChar;
-        int skipAmount = 0;
-
-        //IF they match, keep going
-        //If the current display line runs dry, switch to the next display line and finalize the skipIndex
-        //If they don't match, add skipAmount and only move the original text forward
-
-        this.indexSkipList.clear();
-//        LOGGER.warn("Index skip start: " + this.indexSkipList.size());
-        while (originalTextIterator.hasNext()){
-            //Go through each char
-
-            //123 123 123 123 123 1 original
-            //123s123s123s123s123s1s display
-//            LOGGER.warn("Starting");
-            originalChar = (char) originalTextIterator.next().intValue();
-            displayChar = (char) displayTextIterator.next().intValue();
-            //n - string
-            //nn - display
-
-            if (displayChar == '\n'){
-//                LOGGER.warn("Found break");
-                if (originalChar != displayChar) {
-//                    LOGGER.warn("They are not the same");
-                    skipAmount--;
-//                    LOGGER.warn("(1) Display char: " + displayChar);
-                    if (displayTextIterator.hasNext()) displayChar = (char) displayTextIterator.next().intValue();
-//                    LOGGER.warn("(2) Display char: " + displayChar);
-                    while (originalTextIterator.hasNext() && originalChar != displayChar) {
-                        skipAmount++;
-//                        LOGGER.warn("(1) Original char: " + originalChar);
-                        originalChar = (char) originalTextIterator.next().intValue();
-//                        LOGGER.warn("(2) Original char: " + originalChar);
-                    }
-                }
-                this.indexSkipList.add(skipAmount);
-//                LOGGER.warn("Skip List " + this.indexSkipList.size() + " | " + skipAmount);
-                skipAmount = 0;
-            }
-        }
-
-//        int count = 0;
-//        while (displayTextIterator.hasNext()){
-//            count++;
-//            displayTextIterator.next();
-//        }
-//        LOGGER.error("How many display chars are left? " + count);
-//        LOGGER.error("How long is skip list? " + this.indexSkipList.size());
-//        LOGGER.error("How many lines?" + this.displayLines.size());
-//        LOGGER.warn("Max index: " + this.maxDisplayIndex);
-//        LOGGER.warn("Max String index: " + this.getMaxOriginalIndex());
-
-    }
-
-    public void updateText(String updatedText){
-        originalText = updatedText;
-        this.refreshInfo();
-    }
-
-    public InvoZone getTextZone(int index) {
-        return this.getTextZones(index, index).get(0);
-    }
-
-    public int getMaxDisplayIndex(){
-        return this.maxDisplayIndex;
-    }
-
-    public int getMaxOriginalIndex(){
-        return this.originalText.length();
-    }
-
-    public int getDisplayLineCount(){
-        return this.displayLines.size();
-    }
-
-    public String getOriginalText(){
-        return this.originalText;
-    }
-
     public List<InvoZone> getTextZones(int displayStartIndex, int displayEndIndex) {
         Font font = ClientUtil.getFont();
         float heightScale = font.lineHeight * scaleFactor;
@@ -283,6 +299,12 @@ public class TextViewer {
 
         List<InvoZone> zoneList = new ArrayList<>();
         int currIndex = -1;
+//        LOGGER.debug("Max display index: " + this.getMaxDisplayIndex());
+        int count = 0;
+        for (int a = 0; a < this.displayLines.size(); a++) {
+            count += this.charWidthList.get(a).size();
+        }
+        LOGGER.debug("max possible index: " + count);
 
         boolean startZone;
         for (int a = 0; a < this.displayLines.size(); a++) {
@@ -335,4 +357,63 @@ public class TextViewer {
     }
 
     public static record RenderInfo(float scaleFactor, List<FormattedText> textLines){}
+
+    public static class IndexCursor{
+        public TextViewer parent;
+        public int displayIndex;
+        public int stringIndex;
+
+        public IndexCursor(TextViewer parent, int displayIndex, int stringIndex){
+            this.parent = parent;
+            this.displayIndex = displayIndex;
+            this.stringIndex = stringIndex;
+
+        }
+
+        public IndexCursor copy(IndexCursor otherCursor){
+            this.displayIndex = otherCursor.displayIndex;
+            this.stringIndex = otherCursor.stringIndex;
+            return this;
+        }
+
+        public IndexCursor copy(){
+            return new IndexCursor(this.parent, this.displayIndex, this.stringIndex);
+        }
+
+        public int getDisplayIndex(){
+            return this.displayIndex;
+        }
+
+        public int getStringIndex(){
+            return this.stringIndex;
+        }
+
+        public IndexCursor shiftByString(int shiftAmount){
+            return this.setStringIndex(this.stringIndex + shiftAmount);
+        }
+
+        public IndexCursor setStringIndex(int index){
+            this.stringIndex = (int) MathUtil.clamp(index, 0, this.parent.getMaxStringIndex());
+            this.displayIndex = this.parent.getDisplayIndex(this.stringIndex);
+            return this;
+        }
+
+        public IndexCursor setDisplayIndex(int index){
+            this.displayIndex = (int) MathUtil.clamp(index, 0, this.parent.getMaxDisplayIndex());
+            this.stringIndex = this.parent.getStringIndex(this.displayIndex);
+            return this;
+        }
+
+        public IndexCursor shiftByDisplay(int shiftAmount){
+            return this.setDisplayIndex(this.displayIndex + shiftAmount);
+        }
+
+        public static IndexCursor byStringIndex(int stringIndex, TextViewer parent){
+            return new IndexCursor(parent, parent.getDisplayIndex(stringIndex), stringIndex);
+        }
+
+        public static IndexCursor  byDisplayIndex(int displayIndex, TextViewer parent){
+            return new IndexCursor(parent, displayIndex, parent.getStringIndex(displayIndex));
+        }
+    }
 }

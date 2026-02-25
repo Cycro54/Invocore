@@ -8,3 +8,5 @@ transitive-accessible field net/minecraft/client/StringSplitter$LineComponent st
 
 transitive-accessible field net/minecraft/client/renderer/texture/TextureAtlas texturesByName Ljava/util/Map; #textures in atlas
 transitive-accessible field net/minecraft/client/renderer/texture/TextureManager byPath Ljava/util/Map; #Abstract textures in TextureManager
+
+accessible class net/minecraft/client/gui/components/MultilineTextField$StringView

@@ -176,13 +176,13 @@ public class TestEventCommon implements ClientGuiEvent.RenderHud {
 //        image.setMainZone(new InvoZone(192, 32, 32, 100));
 //        image.render(stack);
 //        InvoImage.fromColor(Color.RED).render(stack, new InvoZone(64, 80, 80, 64));
-        InvoZone paddedZone = new InvoZone(0, guiGraphics.guiWidth(), 0, guiGraphics.guiHeight());
-        paddedZone = paddedZone.copy().inflate(-paddedZone.width() / 4, -paddedZone.height() / 4).center(paddedZone);
-        paddedZone.setWidth(48);
+        InvoZone paddedZone = new InvoZone(142.33334f, 142.33333f, 72.0f, 22.5f, false);
 
 //        String s = "Lorem &lipsum dolor sit amet, consectetur adipiscing elit. Aliquam eget metus ultrices, interdum neque non, sodales diam. Morbi hendrerit urna lorem, sed faucibus nisl venenatis a. Cras rutrum felis accumsan lacinia tempus. Nunc egestas, magna ac sagittis vehicula, neque quam ultricies augue, ut gravida quam ipsum at est.";
 //      String s = "Lorem&l ipsum dolor sit amet, consectetur adipiscing elit. ac sagittis vehicula, neque quam ultricies augue, ut gravida quam ipsum at est.";
-        String s = "12345678                           ";
+//        String s = "dsadakjdnkjadhkjasdafjn  ";
+        String s = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa    ";
+//        String s = "dsadakjdnkjadhkjasdafja   ";
         InvoImage.fromColor(Color.BLACK).render(stack, paddedZone);
         guiGraphics.drawWordWrap(ClientUtil.getFont(), InvoText.literal(s).getText(false),
                 (int) paddedZone.x(), (int) paddedZone.y(), (int) paddedZone.width(), new Color(61, 135, 135, 233).getRGB());
@@ -197,7 +197,7 @@ public class TestEventCommon implements ClientGuiEvent.RenderHud {
 //        text.renderWithActualZone(stack, paddedZone, textZone.setDown(paddedZone.down()), true);
         InvoZone pointZone = InvoZone.fromPoint(new Vector2f(MathUtil.lerp(resultb, textZone.x()-1, textZone.right()+1),
 //        InvoZone pointZone = InvoZone.fromPoint(new Vector2f(textZone.right(),
-                textViewer.getLineY(0))).inflate(0.5f);
+                textViewer.getLineY(1))).inflate(0.5f);
 //                MathUtil.lerp(resulta, textZone.y(), textZone.down()))).inflate(1);
 //        MathUtil.lerp(resulta, textZone.y(), textZone.down())
         InvoImage.fromColor(Color.green).render(stack, textViewer.getTextZone(textViewer.getMaxDisplayIndex()).setWidth(29));

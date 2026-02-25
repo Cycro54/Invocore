@@ -1,7 +1,6 @@
 package invoker54.invocore.client.util;
 
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.AtomicDouble;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
@@ -10,21 +9,20 @@ import invoker54.invocore.common.ModLogger;
 import invoker54.invocore.common.util.MathUtil;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.components.MultilineTextField;
+import net.minecraft.client.gui.screens.inventory.BookEditScreen;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.*;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSink;
 import net.minecraft.util.StringDecomposer;
+import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Matrix4f;
-import org.joml.Vector2f;
-import oshi.util.tuples.Pair;
 
 import java.awt.*;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 public class TextUtil {
@@ -111,12 +109,95 @@ public class TextUtil {
             cutOffPoint = textWidth / neededSplits;
         }
 
-        List<FormattedText> list = ClientUtil.getFont().getSplitter().splitLines(text, (int) Math.ceil(cutOffPoint), Style.EMPTY);
+        //What do I know? The splitter will sometimes get rid of characters and not split.
+        //To account for that I need to
+        //Iterate through the formatted text lines
+        //IF the original string is longer than I know that it discarded
+        //If the missing characters are equal to the amount of lines than I know there should be an extra line
+
+
+//        text = InvoText.literal("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaa\naaaaaaaaaa\naaaaaaaaaaa").getText(true);
+//        text = InvoText.literal("            \n             \n                     \n                            ").getText(true);
+        List<FormattedText> list = new ArrayList<>();
+        ClientUtil.getFont().getSplitter().splitLines(text, (int) Math.ceil(cutOffPoint), text.getStyle(),
+                (splitText,notBreak) -> {
+            list.add(splitText);
+//            LOGGER.warn("Is a break:" + (!notBreak));
+//            if(notBreak) list.add(FormattedText.of("", text.getStyle()));
+                });
+
+//        int count = 0;
+//        int lineCount = 0;
+//        for (FormattedText text1 : list){
+//            count += text1.getString().length();
+//            lineCount++;
+//        }
+//        LOGGER.warn("(1)original count:"+text.getString().length());
+//        LOGGER.warn("(1)modified count:"+count);
+//        LOGGER.warn("(1)line count:"+lineCount);
+//
+//        List<FormattedText> charList = new ArrayList<>();
+//        StringDecomposer.iterateFormatted(text, Style.EMPTY, (pos, style, codePoint) -> {
+//            char textChar = (char) codePoint;
+//            charList.add(FormattedText.of(Character.toString(textChar), style));
+//            return true;
+//        });
+//        List<FormattedText> displayList = new ArrayList<>();
+//                ClientUtil.getFont().getSplitter().splitLines(text.getString(), (int) Math.ceil(cutOffPoint), text.getStyle(), false, (pStyle, pCurrentPos, pContentWidth) -> {
+//            displayList.add(FormattedText.composite(charList.subList(pCurrentPos, pContentWidth)));
+//        });
+//
+//        count = 0;
+//        lineCount = 0;
+//        for (FormattedText text1 : list){
+//            count += text1.getString().length();
+//            lineCount++;
+//        }
+//        LOGGER.warn("(2)original count:"+text.getString().length());
+//        LOGGER.warn("(2)modified count:"+count);
+//        LOGGER.warn("(2)line count:"+lineCount);
+//        LOGGER.warn("Lines: " + list.size());
+//        int count = 0;
+//        for (int a = 0; a < list.size(); a++) {
+//            count += list.get(a).getString().length() + 1;
+//        }
+
+//        if (count - 1 < text.getString().length()) list.add(FormattedText.EMPTY);
 //        characterMixer.splitLines(text, (int) cutOffPoint, Style.EMPTY, (int) Math.abs(neededSplits), (A, cutShort) -> {
 //            list.add(A);
 //        });
+//        List<FormattedText> charList = new ArrayList<>();
+//        StringDecomposer.iterateFormatted(text, Style.EMPTY, (pos, style, codePoint) -> {
+//            char textChar = (char) codePoint;
+//            charList.add(FormattedText.of(Character.toString(textChar), style));
+//            return true;
+//        });
+//        List<FormattedText> displayList = new ArrayList<>();
+//
+//        ClientUtil.getFont().getSplitter().splitLines(text.getString(), (int) Math.ceil(cutOffPoint), text.getStyle(), false, (pStyle, pCurrentPos, pContentWidth) -> {
+//            displayList.add(FormattedText.composite(charList.subList(pCurrentPos, pContentWidth)));
+//        });
+//        count = 0;
+//        for (var fText : displayList){
+//            count += fText.getString().length();
+//        }
+//        LOGGER.warn("original size: " + text.getString().length());
+//        LOGGER.warn("modified size: " + count);
+//
+//        MultilineTextField textField = new MultilineTextField(ClientUtil.getFont(), (int) Math.ceil(cutOffPoint));
+//        textField.setValue(text.getString());
+//        LOGGER.warn("textField line count: " + textField.getLineCount());
+//        count = 0;
+//        for (MultilineTextField.StringView displayLine : textField.iterateLines()) {
+//            count += displayLine.endIndex() - displayLine.beginIndex();
+//        }
+//        LOGGER.warn("textField full count: " + count);
 
-        return renderText(stack, list, properties, textZone, shouldRender);
+
+        //How to know there is a break?
+        //If the original text is larger than the modified text
+
+         return renderText(stack, list, properties, textZone, shouldRender);
     }
 
     public static TextViewer.RenderInfo renderText(PoseStack stack, List<FormattedText> textLines, InvoText.Properties properties,
@@ -248,15 +329,15 @@ public class TextUtil {
         //I am trying to make it so you can change the opacity of text if it calls for it...
         text.visit((style, myText) -> {
 //            LOGGER.warn("What's b: " + style);
-            textList.add(new Pair<>(style, myText));
+            textList.add(Pair.of(style, myText));
             return Optional.empty();
         }, Style.EMPTY);
 
         RenderSystem.disableDepthTest();
         for (var formatPair : textList) {
-            TextColor color = formatPair.getA().getColor();
+            TextColor color = formatPair.getLeft().getColor();
             if (color == null) color = TextColor.fromRgb(0xFFFFFFFF);
-            FormattedText formattedText = FormattedText.of(formatPair.getB(), formatPair.getA());
+            FormattedText formattedText = FormattedText.of(formatPair.getRight(), formatPair.getLeft());
             Color textColor = new Color(color.getValue(), true);
 
             fontrenderer.drawInBatch(Language.getInstance().getVisualOrder(formattedText),
