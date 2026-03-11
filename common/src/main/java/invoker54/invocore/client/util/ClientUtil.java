@@ -165,7 +165,7 @@ public class ClientUtil {
         RenderSystem.disableDepthTest();
 
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+//        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
         bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
         bufferbuilder.vertex(lastPos, botLeft.x, botLeft.y, (float) 0).uv(u0, v1).endVertex(); //bottomLeft

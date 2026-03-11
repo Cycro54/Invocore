@@ -18,34 +18,23 @@ import java.util.List;
 public class TextViewer {
     public static ModLogger LOGGER = ModLogger.getLogger(Invocore.debugMode);
     protected String originalText;
-    protected boolean keepFormatCodes;
     protected InvoText.Properties textProperties;
     protected float scaleFactor;
     protected InvoZone textZone;
-    protected boolean cutText;
-    protected float yOffset;
     protected final List<FormattedText> displayLines;
     protected final List<List<Pair<Character, Float>>> charWidthList;
     protected int maxDisplayIndex;
     protected final List<Integer> indexSkipList;
-    //I need to know the width of each char
-    //I also need to know the index of each character
 
-
-    public TextViewer(String originalText, InvoText.Properties textProperties, InvoZone textZone, boolean cutText, boolean keepFormatCodes) {
+    public TextViewer(String originalText, InvoText.Properties textProperties, InvoZone textZone) {
         this.originalText = originalText;
-        this.keepFormatCodes = keepFormatCodes;
         this.textProperties = textProperties;
-        this.textZone = textZone;
-        this.cutText = cutText;
+        this.textZone = textZone.copy();
         this.displayLines = new ArrayList<>();
         this.charWidthList = new ArrayList<>();
         this.indexSkipList = new ArrayList<>();
-
         this.refreshInfo();
     }
-    //123s
-    //456s
 
     public List<Pair<Character, Float>> getCharWidthList(FormattedText text){
         List<Pair<Character, Float>> charWidthList = new ArrayList<>();
@@ -63,10 +52,14 @@ public class TextViewer {
         return this.charWidthList.get(row).stream().map(Pair::getRight).reduce(Float::sum).orElse(0f);
     }
 
+    public float getLineHeight(){
+        return ClientUtil.getFont().lineHeight * this.scaleFactor;
+    }
+
     public float getLineY(int line){
-        float y = this.textZone.y();
+        float y = this.getPaddedZoneCopy().y();
         Font font = ClientUtil.getFont();
-        float maxHeight = this.textZone.height();
+        float maxHeight = this.getPaddedZoneCopy().height();
         float scaledLineHeight = font.lineHeight * scaleFactor;
 
         switch (textProperties.getTxtAlignment()) {
@@ -92,23 +85,23 @@ public class TextViewer {
 
     public float getStartX(int row){
         float fullRowWidth = this.getRowWidth(row);
-        float startX = textZone.x();
+        float startX = getPaddedZoneCopy().x();
 
         switch (this.textProperties.getTxtAlignment()) {
             case TOP_LEFT, MID_LEFT, BOT_LEFT:
                 break;
             case TOP_MIDDLE, MID, BOT_MIDDLE:
-                startX += (textZone.width() - fullRowWidth) / 2f;
+                startX += (getPaddedZoneCopy().width() - fullRowWidth) / 2f;
                 break;
             case TOP_RIGHT, MID_RIGHT, BOT_RIGHT:
-                startX += textZone.width() - fullRowWidth;
+                startX += getPaddedZoneCopy().width() - fullRowWidth;
                 break;
         }
         return startX;
     }
 
     public RenderInfo getRenderInfo(){
-       return this.textProperties.text(this.originalText).getRenderInfo(this.textZone, this.keepFormatCodes);
+       return this.textProperties.text(this.originalText).getRenderInfo(this.getZoneCopy());
     }
 
     public void refreshInfo() {
@@ -121,11 +114,12 @@ public class TextViewer {
         int offset = -1;
         StringBuilder fullDisplayString = new StringBuilder();
         this.charWidthList.clear();
-        for (var text : this.displayLines) {
+        for (int a = 0; a < this.displayLines.size(); a++) {
+            FormattedText text = this.displayLines.get(a);
             this.charWidthList.add(getCharWidthList(text));
             fullDisplayString.append(text.getString());
             fullDisplayString.append("\n");
-            if (offset != -1){
+            if (a != 0){
                 char c = this.originalText.charAt(offset + 1);
                 if (c == '\n' || c == ' '){
                     offset++;
@@ -141,16 +135,20 @@ public class TextViewer {
             this.indexSkipList.add(0);
             fullDisplayString.append("\n");
             offset++;
-            LOGGER.warn("Adding an extra line...");
+//            LOGGER.warn("Adding an extra line...");
         }
-        LOGGER.warn("Offset: " + offset);
-        LOGGER.warn("original length thing: " + (originalText.length()-1));
-        LOGGER.warn("Formatted length: " + fullDisplayString.length());
+//        LOGGER.warn("Offset: " + offset);
+//        LOGGER.warn("original length thing: " + (originalText.length()-1));
+//        LOGGER.warn("Formatted length: " + fullDisplayString.length());
         this.maxDisplayIndex = fullDisplayString.length()-1;
     }
 
     public void render(PoseStack stack){
-        TextUtil.renderText(stack, this.displayLines, textProperties, this.getZoneCopy(), true);
+        this.render(stack, this.getPaddedZoneCopy());
+    }
+
+    public void render(PoseStack stack, InvoZone zone){
+        TextUtil.renderText(stack, this.displayLines, textProperties, zone, true);
     }
 
     public void updateText(String updatedText){
@@ -227,7 +225,7 @@ public class TextViewer {
     public int getStringIndex(int displayIndex){
         //123n    456n1n
         //123_ __n456n1
-        LOGGER.debug("Display index: " + displayIndex);
+//        LOGGER.debug("Display index: " + displayIndex);
 
         int lineCount = 0;
         int displayCount = -1;
@@ -235,14 +233,14 @@ public class TextViewer {
         //123n 456n 7n
 
         for (int a = 0; a < this.displayLines.size(); a++){
-            LOGGER.debug("(1) Display Count:"+displayCount);
+//            LOGGER.debug("(1) Display Count:"+displayCount);
             displayCount += this.charWidthList.get(a).size();
-            LOGGER.debug("(2) Display Count:"+displayCount);
+//            LOGGER.debug("(2) Display Count:"+displayCount);
             if (displayIndex <= displayCount) break;
             lineCount++;
         }
 
-        LOGGER.debug("Line Count:" + lineCount);
+//        LOGGER.debug("Line Count:" + lineCount);
 
         for (int a = 0; a < lineCount; a++){
             displayIndex += this.indexSkipList.get(a);
@@ -270,7 +268,7 @@ public class TextViewer {
 
         for (var charWidth : selectedPair){
             if (charWidth.getRight() == 0){
-                index++;
+//                index++;
                 break;
             }
             if (pointX > startX + (charWidth.getRight()/2f)){
@@ -300,11 +298,11 @@ public class TextViewer {
         List<InvoZone> zoneList = new ArrayList<>();
         int currIndex = -1;
 //        LOGGER.debug("Max display index: " + this.getMaxDisplayIndex());
-        int count = 0;
-        for (int a = 0; a < this.displayLines.size(); a++) {
-            count += this.charWidthList.get(a).size();
-        }
-        LOGGER.debug("max possible index: " + count);
+//        int count = 0;
+//        for (int a = 0; a < this.displayLines.size(); a++) {
+//            count += this.charWidthList.get(a).size();
+//        }
+//        LOGGER.debug("max possible index: " + count);
 
         boolean startZone;
         for (int a = 0; a < this.displayLines.size(); a++) {
@@ -346,14 +344,36 @@ public class TextViewer {
         return zoneList;
     }
 
+    public InvoZone getPaddedZoneCopy(){
+        return this.getZoneCopy().inflate(-this.textProperties.getPadding());
+    }
+
     public InvoZone getZoneCopy(){
         return this.textZone.copy();
+    }
+
+    public InvoZone getFullZoneCopy(){
+        InvoZone fullZone = this.getZoneCopy();
+        InvoZone textZone = this.getTextZone(0);
+        for (InvoZone tZone : this.getTextZones(0, this.maxDisplayIndex)){
+            textZone.merge(tZone);
+        }
+        return fullZone.merge(textZone.inflate(this.textProperties.getPadding()));
     }
 
     public TextViewer setZone(InvoZone updatedZone){
         this.textZone.copy(updatedZone);
         this.updateText(this.originalText);
         return this;
+    }
+
+    public TextViewer setTextProperties(InvoText.Properties properties){
+        this.textProperties.deserializeNBT(properties.serializeNBT());
+        return this;
+    }
+
+    public InvoText.Properties getTextProperties(){
+        return this.textProperties.copy();
     }
 
     public static record RenderInfo(float scaleFactor, List<FormattedText> textLines){}

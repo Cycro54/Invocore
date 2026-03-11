@@ -20,7 +20,7 @@ public class InvoZone {
     private float y0;
     private float height;
     private boolean stretch = false;
-    
+
     public enum ANCHORPOINT{
         TOP_LEFT,
         TOP_RIGHT,
@@ -60,7 +60,7 @@ public class InvoZone {
     }
 
     public static InvoZone fromPoint(Vector2f point){
-        return new InvoZone(point.x, 1, point.y, 1);
+        return new InvoZone(point.x, 1, point.y, 1).shiftXY(-0.5F, -0.5F);
     }
 
     public static InvoZone fromTag(CompoundTag tag){
@@ -72,7 +72,7 @@ public class InvoZone {
     public boolean isZero(){
         return this.width == 0 || this.height == 0;
     }
-    
+
     public InvoZone stretch(boolean stretch){
         this.stretch = stretch;
         return this;
@@ -97,7 +97,19 @@ public class InvoZone {
                 this.bottomRight().equals(otherZone.bottomRight(), 0);
     }
 
-    public float x() {return x0;}
+    public boolean isSameSize(InvoZone otherZone){
+        return this.area() == otherZone.area();
+    }
+
+    public boolean isSameDimensions(InvoZone otherZone){
+        return this.width() == otherZone.width() && this.height() == otherZone.height();
+    }
+
+    public boolean isSamePosition(InvoZone otherZone){
+        return this.copy().absolute().topLeft().equals(otherZone.copy().absolute().topLeft(), 0);
+    }
+
+    public float x() {return this.x0;}
     public InvoZone setX(float x0) {
         float oldRight = this.right();
         this.x0 = x0;
@@ -106,10 +118,13 @@ public class InvoZone {
         return this;
     }
 
-    public float width() {return width;}
+    public float width() {return this.width;}
     public InvoZone setWidth(float width) {
         this.width = width;
         if (Float.isNaN(this.width)) this.width = 0;
+
+        //Fixes some weird float inaccuracy thing happening... May have to find another solution later
+        this.width = this.right() - this.x();
         return this;
     }
     public InvoZone setWidthConstraint(float width){
@@ -128,7 +143,7 @@ public class InvoZone {
         return this.setWidth(Math.min(this.width, maxWidth));
     }
 
-    public float y() {return y0;}
+    public float y() {return this.y0;}
     public InvoZone setY(float y0) {
         float oldDown = this.down();
         this.y0 = y0;
@@ -137,10 +152,13 @@ public class InvoZone {
         return this;
     }
 
-    public float height() {return height;}
+    public float height() {return this.height;}
     public InvoZone setHeight(float height) {
         this.height = height;
         if (Float.isNaN(this.height)) this.height = 0;
+
+        //Fixes some weird float inaccuracy thing happening... May have to find another solution later
+        this.height = this.down() - this.y();
         return this;
     }
     public InvoZone setHeightConstraint(float height){
@@ -238,8 +256,8 @@ public class InvoZone {
     }
 
     public InvoZone absolute(){
-        if (Math.signum(this.width) <= -0) this.invertX();
-        if (Math.signum(this.height) <= -0) this.invertY();
+        if (Math.signum(this.width) < 0) this.invertX();
+        if (Math.signum(this.height) < 0) this.invertY();
         return this;
     }
 
@@ -323,7 +341,6 @@ public class InvoZone {
     public Vector2f middle(){
         return new Vector2f(this.middleX(), this.middleY());
     }
-
     public Vector2f topLeft(){
         return new Vector2f(this.x(), this.y());
     }
@@ -336,7 +353,11 @@ public class InvoZone {
     public Vector2f bottomRight(){
         return new Vector2f(this.right(), this.down());
     }
-    
+
+    public float area(){
+        return this.width() * this.height();
+    }
+
     public InvoZone intersect(InvoZone otherZone){
         List<Float> xRange = new ArrayList<>(List.of(this.x(), this.right(), otherZone.x(), otherZone.right()));
         xRange.sort(Float::compareTo);
@@ -349,11 +370,14 @@ public class InvoZone {
     }
     public InvoZone merge(InvoZone otherZone){
         otherZone = otherZone.absolute();
+        this.stretch(true);
 
         this.setX(Math.min(this.x(), otherZone.x()));
-        this.stretch(true).setRight(Math.max(this.right(), otherZone.right())).stretch(false);
+        this.setRight(Math.max(this.right(), otherZone.right()));
         this.setY(Math.min(this.y(), otherZone.y()));
-        this.stretch(true).setDown(Math.max(this.down(), otherZone.down())).stretch(false);
+        this.setDown(Math.max(this.down(), otherZone.down()));
+
+        this.stretch(false);
         return this;
     }
 
@@ -388,9 +412,9 @@ public class InvoZone {
         return this;
     }
 
-    public InvoZone gridShift(float xMultiplier, float yMultiplier){
-        return this.shiftXY(this.width() * xMultiplier,
-                this.height() * yMultiplier);
+    public InvoZone gridStep(float xSteps, float ySteps){
+        return this.shiftXY(this.width() * xSteps,
+                this.height() * ySteps);
     }
 
     public ScreenRectangle rect(){
@@ -401,11 +425,11 @@ public class InvoZone {
         return new InvoZone(this.x0, this.width, this.y0, this.height, this.stretch);
     }
     public InvoZone copy(InvoZone otherZone){
+        this.stretch(otherZone.stretch);
         this.setX(otherZone.x());
         this.setWidth(otherZone.width());
         this.setY(otherZone.y());
         this.setHeight(otherZone.height());
-        this.stretch(otherZone.stretch);
         return this;
     }
 
@@ -495,6 +519,7 @@ public class InvoZone {
             return;
         }
 
+        LOGGER.warn("Just so you know, I am parsing your shtuff.");
         this.stretch(false).setX(Float.parseFloat(stringArray[0]))
                 .setWidth(Float.parseFloat(stringArray[1]))
                 .setY(Float.parseFloat(stringArray[2]))

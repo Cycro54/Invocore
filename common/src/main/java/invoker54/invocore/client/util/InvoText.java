@@ -46,6 +46,10 @@ public class InvoText {
         return this.properties;
     }
 
+    public MutableComponent getText() {
+        return StringUtil.formatText(this, this.getProperties().keepFormatCodes).setStyle(this.getStyle()).textComponent;
+    }
+
     public MutableComponent getText(boolean keepFormatCodes) {
         return StringUtil.formatText(this, keepFormatCodes).setStyle(this.getStyle()).textComponent;
     }
@@ -115,7 +119,7 @@ public class InvoText {
 
     public TextViewer getTextViewer(boolean keepFormatCodes, InvoZone textZone) {
         Properties props = this.getProperties();
-        return new TextViewer(this.getText(keepFormatCodes).getString(), props, textZone, false, keepFormatCodes);
+        return new TextViewer(this.getText(keepFormatCodes).getString(), props, textZone);
     }
 
 //    public void renderWithActualZone(PoseStack stack, InvoZone textZone, InvoZone renderZone, boolean keepFormatCodes) {
@@ -150,8 +154,8 @@ public class InvoText {
         this.getProperties().deserializeNBT(tag.getCompound(PROPERTIES));
     }
 
-    public TextViewer.RenderInfo getRenderInfo(InvoZone textZone, boolean keepFormatCodes) {
-        return TextUtil.renderText(null, textZone, this.getText(keepFormatCodes), this.getProperties(), false);
+    public TextViewer.RenderInfo getRenderInfo(InvoZone textZone) {
+        return TextUtil.renderText(null, textZone, this.getText(), this.getProperties(), false);
     }
 
     public static class Properties {
@@ -161,6 +165,7 @@ public class InvoText {
         public static final String TXT_ALIGNMENT_ENUM = "TXT_ALIGNMENT_ENUM";
         public static final String MAX_TEXT_SIZE_FLOAT = "MAX_TEXT_SIZE_FLOAT";
         public static final String MIN_TEXT_SIZE_FLOAT = "MIN_TEXT_SIZE_FLOAT";
+        public static final String KEEP_FORMAT_CODES_BOOL = "KEEP_FORMAT_CODES_BOOL";
 
         private boolean shadow = true;
         private int maxSplits = 0;
@@ -168,6 +173,7 @@ public class InvoText {
         private TextUtil.TextAlign TextAlign = TextUtil.TextAlign.MID_LEFT;
         private float maxTextSize = 27F;
         private float minTextSize = 5F;
+        private boolean keepFormatCodes = false;
 
         public InvoText text(String text) {
             return this.text(InvoText.literal(text));
@@ -176,6 +182,12 @@ public class InvoText {
         public InvoText text(InvoText text) {
             text.setProperties(this);
             return text;
+        }
+
+        public Properties copy(){
+            Properties copy = new Properties();
+            copy.deserializeNBT(this.serializeNBT());
+            return copy;
         }
 
         public boolean isShadow() {
@@ -240,6 +252,15 @@ public class InvoText {
             return this;
         }
 
+        public boolean getKeepFormatCodes(){
+            return this.keepFormatCodes;
+        }
+
+        public Properties setKeepFormatCodes(boolean value){
+            this.keepFormatCodes = value;
+            return this;
+        }
+
         public CompoundTag serializeNBT() {
             CompoundTag tag = new CompoundTag();
             tag.putBoolean(IS_SHADOW_BOOL, this.isShadow());
@@ -248,6 +269,7 @@ public class InvoText {
             tag.putString(TXT_ALIGNMENT_ENUM, this.getTxtAlignment().name());
             tag.putFloat(MAX_TEXT_SIZE_FLOAT, this.getMaxTextSize());
             tag.putFloat(MIN_TEXT_SIZE_FLOAT, this.getMinTextSize());
+            tag.putBoolean(KEEP_FORMAT_CODES_BOOL, this.getKeepFormatCodes());
             return tag;
         }
 
@@ -258,6 +280,7 @@ public class InvoText {
             this.setTxtAlignment(TextUtil.TextAlign.valueOf(tag.getString(TXT_ALIGNMENT_ENUM)));
             this.setMaxTextSize(tag.getFloat(MAX_TEXT_SIZE_FLOAT));
             this.setMinTextSize(tag.getFloat(MIN_TEXT_SIZE_FLOAT));
+            this.setKeepFormatCodes(tag.getBoolean(KEEP_FORMAT_CODES_BOOL));
         }
     }
 }

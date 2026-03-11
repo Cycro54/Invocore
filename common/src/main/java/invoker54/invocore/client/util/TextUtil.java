@@ -89,9 +89,9 @@ public class TextUtil {
         //I have to make it so the space it takes up equals the space it will occupy
 
         //First grab the X ratio for the text space (for each 1 height, there is xRatio)
-        double textArea = textWidth * ClientUtil.getFont().lineHeight;
+//        double textArea = textWidth * ClientUtil.getFont().lineHeight;
         double spaceArea = textZone.width() * textZone.height();
-        double scalingFactor = Math.sqrt(spaceArea / textArea);
+//        double scalingFactor = Math.sqrt(spaceArea / textArea);
         double textSize = Math.sqrt((ClientUtil.getFont().lineHeight * spaceArea) / textWidth);
         double updatedTextSize = MathUtil.clamp(textSize, minTextSize, maxTextSize);
         double percentChange = updatedTextSize / textSize;
@@ -114,7 +114,6 @@ public class TextUtil {
         //Iterate through the formatted text lines
         //IF the original string is longer than I know that it discarded
         //If the missing characters are equal to the amount of lines than I know there should be an extra line
-
 
 //        text = InvoText.literal("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaa\naaaaaaaaaa\naaaaaaaaaaa").getText(true);
 //        text = InvoText.literal("            \n             \n                     \n                            ").getText(true);

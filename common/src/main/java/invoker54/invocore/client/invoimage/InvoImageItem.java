@@ -1,5 +1,6 @@
 package invoker54.invocore.client.invoimage;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import invoker54.invocore.client.util.ClientUtil;
 import invoker54.invocore.client.util.InvoZone;
@@ -40,11 +41,13 @@ public class InvoImageItem extends InvoImage {
     }
 
     @Override
-    public void render(PoseStack stack, InvoZone renderZone) {
+    public void render(PoseStack stack, InvoZone renderZone, boolean movePivot) {
         if (this.mainZone.isZero()) return;
 
-        this.rotate(stack, renderZone);
+        this.rotate(stack, renderZone, movePivot);
+        this.changeTintForRender(true);
         ClientUtil.blitItem(stack, renderZone, this.stack);
+        this.changeTintForRender(false);
         stack.popPose();
     }
 

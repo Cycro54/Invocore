@@ -1,6 +1,7 @@
 package invoker54.invocore.client.invoimage;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import invoker54.invocore.Invocore;
@@ -8,16 +9,15 @@ import invoker54.invocore.client.util.ClientUtil;
 import invoker54.invocore.client.util.InvoZone;
 import invoker54.invocore.common.ModLogger;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.*;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
-import org.apache.commons.lang3.ArrayUtils;
-import org.jetbrains.annotations.NotNull;
 import org.joml.Vector2f;
+import org.joml.Vector2fc;
+import org.joml.Vector4fc;
 
 import java.awt.*;
 import java.io.IOException;
@@ -32,10 +32,13 @@ public abstract class InvoImage {
     public static final String MAIN_ZONE = "MAIN_ZONE";
     public static final String ROTATION_FLOAT = "ROTATION_FLOAT";
     public static final String PIVOT_VECTOR = "PIVOT_VECTOR";
+    public static final String TINT_INT = "TINT_INT";
 
     protected final InvoZone mainZone;
     protected Vector2f pivotPoint;
     protected float rotation;
+    protected Color tintColor = Color.white;
+    protected float[] previousShaderColor = Color.white.getRGBComponents(new float[4]);
 
     public InvoImage(InvoZone renderZone){
         this(renderZone, 0, new Vector2f(0,0));
@@ -170,7 +173,7 @@ public abstract class InvoImage {
     }
 
     public Vector2f getPivotPoint(){
-        return this.pivotPoint;
+        return new Vector2f(this.pivotPoint.x, this.pivotPoint.y);
     }
 
     public void setRotation(float rotation){
@@ -180,19 +183,50 @@ public abstract class InvoImage {
         return this.rotation;
     }
 
-    public void rotate(PoseStack stack, InvoZone renderZone){
-        Vector2f pivot = InvoZone.changeRelativeMultiply(this.pivotPoint, this.getMainZoneCopy(), renderZone);
+    public void rotate(PoseStack stack, InvoZone renderZone, boolean movePivot){
+        Vector2f pivot = this.getPivotPoint();
+        if (movePivot) InvoZone.changeRelativeMultiply(this.pivotPoint, this.getMainZoneCopy(), renderZone);
         stack.pushPose();
         stack.translate(pivot.x, pivot.y, 0);
         stack.mulPose(Axis.ZP.rotation(rotation));
         stack.translate(-pivot.x, -pivot.y, 0);
     }
 
-    public void render(PoseStack stack){
-        this.render(stack, this.mainZone);
+    public void setTintColor(Color color){
+        this.tintColor = color;
     }
 
-    public abstract void render(PoseStack stack, InvoZone renderZone);
+    public Color getTintColor(){
+        return this.tintColor;
+    }
+
+    public void changeTintForRender(boolean rendering){
+        float[] myTintArray = this.tintColor.getRGBComponents(new float[4]);
+        float[] currentTint = RenderSystem.getShaderColor().clone();
+
+        if (rendering){
+            this.previousShaderColor = currentTint.clone();
+
+            Float[] resultTint = List.of(myTintArray[0] * currentTint[0], myTintArray[1] * currentTint[1],
+                    myTintArray[2] * currentTint[2], myTintArray[3] * currentTint[3]).toArray(new Float[4]);
+            RenderSystem.setShaderColor(resultTint[0], resultTint[1], resultTint[2], resultTint[3]);
+        }
+        else{
+            RenderSystem.setShaderColor(previousShaderColor[0], previousShaderColor[1],
+                    previousShaderColor[2], previousShaderColor[3]);
+        }
+    }
+
+    public void render(PoseStack stack){
+        InvoImage.fromColor(Color.pink).render(stack, InvoZone.fromPoint(this.pivotPoint).inflate(0.25F));
+        this.render(stack, this.mainZone, false);
+    }
+
+    public void render(PoseStack stack, InvoZone renderZone){
+        this.render(stack, renderZone, true);
+    }
+
+    public abstract void render(PoseStack stack, InvoZone renderZone, boolean movePivot);
 
     public CompoundTag serializeNBT(){
         CompoundTag tag = new CompoundTag();
@@ -201,6 +235,8 @@ public abstract class InvoImage {
         tag.putFloat(ROTATION_FLOAT, this.rotation);
 
         tag.putString(PIVOT_VECTOR, this.pivotPoint.x() + ":" + this.pivotPoint.y());
+
+        tag.putInt(TINT_INT, this.getTintColor().getRGB());
         return tag;
     }
 
@@ -210,6 +246,8 @@ public abstract class InvoImage {
 
         String[] stringArray = tag.getString(PIVOT_VECTOR).split(":");
         this.pivotPoint = new Vector2f(Float.parseFloat(stringArray[0]), Float.parseFloat(stringArray[1]));
+
+        this.setTintColor(new Color(tag.getInt(TINT_INT)));
     }
 
     public InvoImageCanvas canvas(List<InvoImage> imageList){

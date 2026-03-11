@@ -8,6 +8,7 @@ import invoker54.invocore.client.util.ClientUtil;
 import invoker54.invocore.client.util.InvoZone;
 import invoker54.invocore.common.ModLogger;
 import invoker54.invocore.common.util.ResourceUtil;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -128,7 +129,7 @@ public class InvoImageTexture extends InvoImage{
     }
     public InvoZone setSubImageZone(InvoZone updatedZone) {
         this.subImageZone.copy(updatedZone.copy().absolute().setBound(this.imageZone.copy(), true));
-        if (!this.subImageZone.isSame(this.imageZone)) this.subImageZone.setBound(this.imageZone.copy().inflate(-1),true);
+        if (!this.subImageZone.isSame(this.imageZone)) this.subImageZone.setBound(this.imageZone.copy(),true);
 //        LOGGER.warn("Subimage is now: " + this.subImageZone);
         return this.subImageZone;
     }
@@ -171,7 +172,7 @@ public class InvoImageTexture extends InvoImage{
     }
 
     @Override
-    public void render(PoseStack stack, InvoZone renderZone) {
+    public void render(PoseStack stack, InvoZone renderZone, boolean movePivot) {
         if (this.imageZone.isZero()) return;
 
         boolean invertW = invertZoneW;
@@ -198,8 +199,11 @@ public class InvoImageTexture extends InvoImage{
                     if (invertH) imageZone.invertY();
 
                     //The pivot point is based on the main zone
-                    this.rotate(stack, renderZone);
+                    this.rotate(stack, renderZone, movePivot);
+                    this.changeTintForRender(true);
                     ClientUtil.blitImage(stack, renderZone, imageZone, this.imageScaleWidth, this.imageScaleHeight);
+                    this.changeTintForRender(false);
+//                    RenderSystem.clearColor(tintColor.getRed()/255f, tintColor.getGreen()/255f, tintColor.getBlue()/255f, tintColor.getAlpha()/255f);
                     stack.popPose();
 //                    LOGGER.warn("THIS HAS BEEN RENDERED!!!");
                 }
@@ -259,9 +263,18 @@ public class InvoImageTexture extends InvoImage{
         return cropImage;
     }
 
+    private void renderSlice(PoseStack stack, InvoZone sizedImageZone, InvoImageTexture texture, InvoZone renderZone, InvoZone.ANCHORPOINT anchorpoint){
+        texture.setMainZone(texture.getImageZoneCopy().changeRelativeMultiply(this.imageZone, sizedImageZone)
+                .changeRelativeAdd(sizedImageZone, renderZone, anchorpoint),false);
+        texture.invertImage(invertZoneW, invertZoneH);
+        if (invertZoneW) texture.mainZone.mirrorX(renderZone.middleX());
+        if (invertZoneH) texture.mainZone.mirrorY(renderZone.middleY());
+        texture.render(stack);
+    }
+
     private void renderNineSlice(PoseStack stack, InvoZone subImageZone, InvoZone renderZone, boolean invertZoneW, boolean invertZoneH) {
         InvoZone sizedImageZone = this.imageZone.copy().multiply(this.maxImageSize).setBound(renderZone, true);
-        InvoZone sizedSubImageZone = getSubRenderZone(sizedImageZone);
+//        InvoZone sizedSubImageZone = getSubRenderZone(sizedImageZone);
 
         float originalSize = this.maxImageSize;
         float adjustedMaxSize = sizedImageZone.width()/this.originalTextureZone.width();
@@ -269,39 +282,43 @@ public class InvoImageTexture extends InvoImage{
 
         //Top Left
         InvoImageTexture topLeftImage = this.crop(InvoZone.fromPoints(imageZone.topLeft(), subImageZone.topLeft()), invertZoneW, invertZoneH);
-        topLeftImage.setMainZone(topLeftImage.getImageZoneCopy().changeRelativeMultiply(this.imageZone, sizedImageZone)
-                .changeRelativeAdd(sizedImageZone, renderZone, InvoZone.ANCHORPOINT.TOP_LEFT),false);
-        topLeftImage.invertImage(invertZoneW, invertZoneH);
-        if (invertZoneW) topLeftImage.mainZone.mirrorX(renderZone.middleX());
-        if (invertZoneH) topLeftImage.mainZone.mirrorY(renderZone.middleY());
-        topLeftImage.render(stack);
+        this.renderSlice(stack, sizedImageZone, topLeftImage, renderZone, InvoZone.ANCHORPOINT.TOP_LEFT);
+//        topLeftImage.setMainZone(topLeftImage.getImageZoneCopy().changeRelativeMultiply(this.imageZone, sizedImageZone)
+//                .changeRelativeAdd(sizedImageZone, renderZone, InvoZone.ANCHORPOINT.TOP_LEFT),false);
+//        topLeftImage.invertImage(invertZoneW, invertZoneH);
+//        if (invertZoneW) topLeftImage.mainZone.mirrorX(renderZone.middleX());
+//        if (invertZoneH) topLeftImage.mainZone.mirrorY(renderZone.middleY());
+//        topLeftImage.render(stack);
 
 //        //Bottom Left
         InvoImageTexture bottomLeftImage = this.crop(InvoZone.fromPoints(imageZone.bottomLeft(), subImageZone.bottomLeft()), invertZoneW, invertZoneH);
-        bottomLeftImage.setMainZone(bottomLeftImage.getImageZoneCopy().changeRelativeMultiply(this.imageZone, sizedImageZone)
-                .changeRelativeAdd(sizedImageZone, renderZone, InvoZone.ANCHORPOINT.BOTTOM_LEFT), false);
-        bottomLeftImage.invertImage(invertZoneW, invertZoneH);
-        if (invertZoneW) bottomLeftImage.mainZone.mirrorX(renderZone.middleX());
-        if (invertZoneH) bottomLeftImage.mainZone.mirrorY(renderZone.middleY());
-        bottomLeftImage.render(stack);
+        this.renderSlice(stack, sizedImageZone, bottomLeftImage, renderZone, InvoZone.ANCHORPOINT.BOTTOM_LEFT);
+//        bottomLeftImage.setMainZone(bottomLeftImage.getImageZoneCopy().changeRelativeMultiply(this.imageZone, sizedImageZone)
+//                .changeRelativeAdd(sizedImageZone, renderZone, InvoZone.ANCHORPOINT.BOTTOM_LEFT), false);
+//        bottomLeftImage.invertImage(invertZoneW, invertZoneH);
+//        if (invertZoneW) bottomLeftImage.mainZone.mirrorX(renderZone.middleX());
+//        if (invertZoneH) bottomLeftImage.mainZone.mirrorY(renderZone.middleY());
+//        bottomLeftImage.render(stack);
 
         //Bottom Right
         InvoImageTexture bottomRightImage = this.crop(InvoZone.fromPoints(imageZone.bottomRight(), subImageZone.bottomRight()), invertZoneW, invertZoneH);
-        bottomRightImage.setMainZone(bottomRightImage.getImageZoneCopy().changeRelativeMultiply(this.imageZone, sizedImageZone)
-                .changeRelativeAdd(sizedImageZone, renderZone, InvoZone.ANCHORPOINT.BOTTOM_RIGHT), false);
-        bottomRightImage.invertImage(invertZoneW, invertZoneH);
-        if (invertZoneW) bottomRightImage.mainZone.mirrorX(renderZone.middleX());
-        if (invertZoneH) bottomRightImage.mainZone.mirrorY(renderZone.middleY());
-        bottomRightImage.render(stack);
+        this.renderSlice(stack, sizedImageZone, bottomRightImage, renderZone, InvoZone.ANCHORPOINT.BOTTOM_RIGHT);
+//        bottomRightImage.setMainZone(bottomRightImage.getImageZoneCopy().changeRelativeMultiply(this.imageZone, sizedImageZone)
+//                .changeRelativeAdd(sizedImageZone, renderZone, InvoZone.ANCHORPOINT.BOTTOM_RIGHT), false);
+//        bottomRightImage.invertImage(invertZoneW, invertZoneH);
+//        if (invertZoneW) bottomRightImage.mainZone.mirrorX(renderZone.middleX());
+//        if (invertZoneH) bottomRightImage.mainZone.mirrorY(renderZone.middleY());
+//        bottomRightImage.render(stack);
 
         //Top Right
         InvoImageTexture topRightImage = this.crop(InvoZone.fromPoints(imageZone.topRight(), subImageZone.topRight()), invertZoneW, invertZoneH);
-        topRightImage.setMainZone(topRightImage.getImageZoneCopy().changeRelativeMultiply(this.imageZone, sizedImageZone)
-                .changeRelativeAdd(sizedImageZone, renderZone, InvoZone.ANCHORPOINT.TOP_RIGHT),false);
-        topRightImage.invertImage(invertZoneW, invertZoneH);
-        if (invertZoneW) topRightImage.mainZone.mirrorX(renderZone.middleX());
-        if (invertZoneH) topRightImage.mainZone.mirrorY(renderZone.middleY());
-        topRightImage.render(stack);
+        this.renderSlice(stack, sizedImageZone, topRightImage, renderZone, InvoZone.ANCHORPOINT.TOP_RIGHT);
+//        topRightImage.setMainZone(topRightImage.getImageZoneCopy().changeRelativeMultiply(this.imageZone, sizedImageZone)
+//                .changeRelativeAdd(sizedImageZone, renderZone, InvoZone.ANCHORPOINT.TOP_RIGHT),false);
+//        topRightImage.invertImage(invertZoneW, invertZoneH);
+//        if (invertZoneW) topRightImage.mainZone.mirrorX(renderZone.middleX());
+//        if (invertZoneH) topRightImage.mainZone.mirrorY(renderZone.middleY());
+//        topRightImage.render(stack);
 
         InvoImageTexture topImage = this.crop(InvoZone.fromPoints(subImageZone.topLeft(), new Vector2f(subImageZone.right(), imageZone.y())), invertZoneW, invertZoneH);
 
@@ -381,11 +398,14 @@ public class InvoImageTexture extends InvoImage{
 //            LOGGER.warn("What's height: " + copyZone.height());
             copyImage.setImageZone(copyZone.copy().changeRelativeMultiply(copyImage.getAdjustedImageZone(), copyImage.imageZone));
             copyZone.setX(currentX).setY(currentY);
+//            copyImage.setPivot(this.pivotPoint);
+            LOGGER.warn("My pivot: " + this.pivotPoint);
+            LOGGER.warn("Copy pivot: " + copyImage.pivotPoint);
 
             if (mirror && mirrorX) copyImage.setImageZone(copyImage.getImageZoneCopy().invertX());
             if (mirror && mirrorY) copyImage.setImageZone(copyImage.getImageZoneCopy().invertY());
 
-            copyImage.render(stack, copyZone);
+            copyImage.render(stack, copyZone, false);
 
             currentX = copyZone.copy().absolute().right();
 

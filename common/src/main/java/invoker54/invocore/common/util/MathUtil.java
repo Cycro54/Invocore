@@ -1,8 +1,12 @@
 package invoker54.invocore.common.util;
 
+import invoker54.invocore.Invocore;
 import invoker54.invocore.client.util.InvoZone;
+import invoker54.invocore.common.ModLogger;
+import org.joml.Vector2f;
 
 public class MathUtil {
+    private static ModLogger LOGGER = ModLogger.getLogger(Invocore.debugMode);
 
     public static double clamp(double value, double min, double max){
         return Math.max(min, Math.min(value, max));
@@ -20,15 +24,48 @@ public class MathUtil {
             max = holder;
         }
 
-        double difference = min - (max + 1);
+        double difference = min - max;
 
         if (value > max) return clampLoop(value + difference, min, max);
 
         if (value < min) return clampLoop(value - difference, min, max);
 
         return value;
-        //-3
-        //-2,-1,0,1,2,3
+    }
+
+    public static double clampPingPong(double value, double min, double max) {
+        if (min == max) return max;
+        if (min > max) {
+            double holder = min;
+            min = max;
+            max = holder;
+        }
+
+        double difference = min - max;
+
+        if (value > max) return clampLoop(-(value + difference), min, max);
+
+        if (value < min) return clampLoop(-(value - difference), min, max);
+
+        return value;
+    }
+
+    public static double lookRotation(Vector2f startPos, Vector2f endPos){
+        return lookRotation(0, startPos, endPos);
+    }
+
+    public static double lookRotation(double startRotation, Vector2f startPos, Vector2f endPos){
+        //North is 90 degrees
+        //East is 0 degrees
+        //South is 270 degrees
+        //West is 180 degrees
+
+        double resultRotation = (Math.toDegrees(Math.atan2(endPos.y() - startPos.y(), endPos.x() - startPos.x())));
+        if (resultRotation < 0) resultRotation = 360 + resultRotation;
+
+        LOGGER.warn("Rotation: " + "start:"+(startRotation)+", result:"+resultRotation+", final:"+( resultRotation - startRotation));
+
+        return resultRotation - startRotation;
     }
 
     public static InvoZone zoneLerp(double percentage, InvoZone beginZone, InvoZone endZone){

@@ -1,6 +1,7 @@
 package invoker54.invocore.client.invoimage;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import invoker54.invocore.client.util.InvoZone;
@@ -65,15 +66,16 @@ public class InvoImageCanvas extends InvoImage{
     }
 
     @Override
-    public void render(PoseStack stack, InvoZone renderZone) {
+    public void render(PoseStack stack, InvoZone renderZone, boolean movePivot) {
         if (this.mainZone.isZero()) return;
 
-
-        this.rotate(stack, renderZone);
+        this.rotate(stack, renderZone, movePivot);
+        this.changeTintForRender(true);
         for (InvoImage image : this.imageList){
             image.render(stack, image.mainZone.copy().changeRelativeAdd(this.getMainZoneCopy(), renderZone,
                     InvoZone.ANCHORPOINT.TOP_LEFT, InvoZone.ANCHORPOINT.BOTTOM_RIGHT));
         }
+        this.changeTintForRender(false);
         stack.popPose();
     }
 
