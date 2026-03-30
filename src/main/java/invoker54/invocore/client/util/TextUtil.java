@@ -3,9 +3,9 @@ package invoker54.invocore.client.util;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
@@ -13,14 +13,14 @@ import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSink;
 import net.minecraft.util.StringDecomposer;
+import org.joml.Matrix3x2fStack;
 import org.joml.Matrix4f;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-
-import static invoker54.invocore.client.util.ClientUtil.getMinecraft;
 
 public class TextUtil {
     private static int black = new java.awt.Color(0,0,0, 255).getRGB();
@@ -33,23 +33,25 @@ public class TextUtil {
         RIGHT
     }
 
-
-    //deprecated
-    public static void renderText(PoseStack stack, Component text, boolean shadow,
-                                  float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
-        renderText(stack, text, shadow, 0, x0, maxWidth, y0, maxHeight, padding, align);
+    public static void render2DText(GuiGraphics graphics, Component text, boolean shadow, int maxSplits,
+                                     InvoZone renderZone, int padding, txtAlignment align){
+        RenderInfo info = getRenderInfo(text, shadow, maxSplits, renderZone.width(), renderZone.height(), padding, align);
+        render2DText(graphics, info, shadow, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), padding, align);
     }
 
-    public static void renderText(PoseStack stack, Component text, boolean shadow, int maxSplits,
-                                  InvoZone renderZone, txtAlignment alignment){
-        renderText(stack, text, shadow, maxSplits, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), 0, alignment);
+    public static void render3DText(PoseStack stack, Component text, boolean shadow, int maxSplits,
+                                    InvoZone renderZone, int padding, txtAlignment align){
+        RenderInfo info = getRenderInfo(text, shadow, maxSplits, renderZone.width(), renderZone.height(), padding, align);
+        render3DText(stack, info, shadow, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), padding, align);
     }
-    public static void renderText(PoseStack stack, Component text, boolean shadow, int maxSplits,
-                                  float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align){
+
+    public static RenderInfo getRenderInfo(Component text, boolean shadow, int maxSplits,
+                                           float maxWidth, float maxHeight, int padding, txtAlignment align){
         if (characterMixer == null) characterMixer = new CharacterManagerMixer();
 
-        java.util.List<FormattedText> list = new ArrayList<>();
+        java.util.List<FormattedText> textLines = new ArrayList<>();
         int txtWidth = ClientUtil.getFont().width(text);
+        Font font = ClientUtil.getFont();
 
         //I took this from the if statement
         // && maxHeight > mC.font.lineHeight
@@ -76,25 +78,12 @@ public class TextUtil {
                 neededSplits = Math.abs(maxSplits);
             }
 
-            characterMixer.splitLines(text, (int) (ClientUtil.getFont().width(text)/neededSplits), Style.EMPTY, (A, B) -> list.add(A));
+            characterMixer.splitLines(text, (int) (ClientUtil.getFont().width(text)/neededSplits), Style.EMPTY, (A, B) -> textLines.add(A));
 
         }
         else {
-            list.add(text);
+            textLines.add(text);
         }
-
-
-        renderText(stack, list, shadow, x0, maxWidth, y0, maxHeight, padding, align);
-    }
-    public static void renderText(PoseStack stack, List<FormattedText> textLines, boolean shadow,
-                                  InvoZone renderZone, txtAlignment alignment){
-        renderText(stack, textLines, shadow, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), 0, alignment);
-    }
-    public static void renderText(PoseStack stack, List<FormattedText> textLines, boolean shadow,
-                                  float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align) {
-        Font font = ClientUtil.getFont();
-
-        stack.pushPose();
 
         float maxTxtHeight = textLines.size() * (7 + 1);
         maxTxtHeight += -2 + textLines.size();
@@ -142,9 +131,82 @@ public class TextUtil {
             //That means maxWidth is 2 times larger than the txtMaxWidth
             scaleFactor = ((maxWidth - (align == txtAlignment.MIDDLE ? (padding * 2) : padding)) / maxTxtWidth);
         }
+
+        return new RenderInfo(textLines, scaleFactor, maxTxtHeight, shadowOffset);
+//        renderText(stack, textLines, shadow, x0, maxWidth, y0, maxHeight, padding, align);
+    }
+//    public static void getRenderInfo(GuiGraphics stack, List<FormattedText> textLines, boolean shadow,
+//                                     InvoZone renderZone, txtAlignment alignment){
+//        getRenderInfo(stack, textLines, shadow, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), 0, alignment);
+//    }
+    public static void render2DText(GuiGraphics graphics, RenderInfo info, boolean shadow,
+                                     float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align) {
+        Font font = ClientUtil.getFont();
+
+        Matrix3x2fStack stack = graphics.pose();
+        stack.pushMatrix();
+        float scaleFactor = info.scaleFactor;
+        List<FormattedText> textLines = info.textLines;
+        float maxTxtHeight = info.maxTxtHeight;
+        float shadowOffset = info.shadowOffset;
+
 //        LOGGER.debug("What's padding amount to remove? " + ((1F/maxWidth) * padding * 2));
 //        scaleFactor -= ((1F/maxWidth) * padding * 2);
 //        LOGGER.debug("What's the scale factor? " + scaleFactor);
+        stack.scale(scaleFactor, scaleFactor);
+
+        //Since I changed the Scale of the text, I have to recalculate the maxTxtHeight and maxTxtWidth
+//        maxTxtHeight = (maxTxtHeight/scaleFactor);
+
+        for (int a = 0; a < textLines.size(); ++a) {
+            FormattedText currText = textLines.get(a);
+
+            float y = y0 / scaleFactor;
+            y = y + ((((maxHeight - (maxTxtHeight * scaleFactor)) / 2F) + (a * font.lineHeight * scaleFactor)) / scaleFactor);
+//            LOGGER.debug("max height is: "+ maxHeight);
+//            LOGGER.debug("base empty space is: " + (maxHeight - (maxTxtHeight * scaleFactor)));
+//            LOGGER.debug("resulting y spot is: " + (((maxHeight - (maxTxtHeight * scaleFactor))/2F) + (a * font.lineHeight * scaleFactor)));
+
+            float x = x0;
+            switch (align) {
+                case LEFT:
+                    x = (x) / scaleFactor;
+                    break;
+                case MIDDLE:
+                    x = ((x + ((maxWidth - ((font.width(currText) - (1 - shadowOffset)) * scaleFactor)) / 2F)) / scaleFactor);
+//                    LOGGER.debug("Max Width: " + (maxWidth));
+//                    LOGGER.debug("Font Width is now: " + (font.getStringWidth(currText) * scaleFactor));
+//                    LOGGER.debug("What's the empty space: " + ((maxWidth) - (font.getStringWidth(currText) * scaleFactor)));
+//                    LOGGER.debug("Where will the top left be for the text: " + x);
+                    break;
+                case RIGHT:
+                    x = (((x + maxWidth) / scaleFactor) - (((padding) + ((font.width(currText) - (1 - shadowOffset)) * scaleFactor)) / scaleFactor));
+                    break;
+            }
+
+            graphics.pose().pushMatrix().translate(x,y);
+            graphics.drawString(ClientUtil.getFont(), Language.getInstance().getVisualOrder(currText), 0,0, -1, shadow);
+            graphics.pose().popMatrix();
+        }
+
+        stack.popMatrix();
+    }
+
+    public static void render3DText(PoseStack stack, RenderInfo info, boolean shadow,
+                                    float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align) {
+        Font font = ClientUtil.getFont();
+
+//        Matrix3x2fStack stack = graphics.pose();
+        stack.pushPose();
+        float scaleFactor = info.scaleFactor;
+        List<FormattedText> textLines = info.textLines;
+        float maxTxtHeight = info.maxTxtHeight;
+        float shadowOffset = info.shadowOffset;
+
+//        LOGGER.debug("What's padding amount to remove? " + ((1F/maxWidth) * padding * 2));
+//        scaleFactor -= ((1F/maxWidth) * padding * 2);
+//        LOGGER.debug("What's the scale factor? " + scaleFactor);
+//        ClientUtil.blit3DColor(stack, new InvoZone(x0, maxWidth, y0, maxHeight), Color.RED.getRGB());
         stack.scale(scaleFactor, scaleFactor, scaleFactor);
 
         //Since I changed the Scale of the text, I have to recalculate the maxTxtHeight and maxTxtWidth
@@ -176,33 +238,41 @@ public class TextUtil {
                     break;
             }
 
-            renderText(currText, stack, x, y, shadow);
+            stack.pushPose();
+            stack.translate(x,y,0);
+            MultiBufferSource.BufferSource irendertypebuffer$impl = ClientUtil.getMinecraft().renderBuffers().bufferSource();
+            int lightCoords = 15728880;
+            Font fontrenderer = ClientUtil.getFont();
+            fontrenderer.drawInBatch(Language.getInstance().getVisualOrder(currText), 0, 0, -1,
+                    shadow, stack.last().pose(), irendertypebuffer$impl, Font.DisplayMode.SEE_THROUGH, 0, lightCoords);
+            irendertypebuffer$impl.endBatch();
+            stack.popPose();
         }
 
         stack.popPose();
     }
 
-    public static void renderText(FormattedText text, PoseStack stack, float x, float y, boolean shadow){
-        MultiBufferSource.BufferSource irendertypebuffer$impl = getMinecraft().renderBuffers().bufferSource();
+    public static void getRenderInfo(FormattedText text, GuiGraphics graphics, float x, float y, boolean shadow){
+
 
 //        boolean flag = !player.isDiscrete();
 //        float f = player.getBbHeight() * 0.5f;
         int i = "deadmau5".equals(text.getString()) ? -10 : 0;
-        Matrix4f matrix4f = stack.last().pose();
+//        Matrix4f matrix4f = stack.last().pose();
 
         //This is the usual number, so let's keep it like that for now
-        int lightCoords = 15728880;
+
 
         //float f1 = Minecraft.getInstance().options.getBackgroundOpacity(0.25F);
-        int j = (int)(0 * 255.0F) << 24;
-        Font fontrenderer = ClientUtil.getFont();
+//        int j = (int)(0 * 255.0F) << 24;
 
-        RenderSystem.disableDepthTest();
-        fontrenderer.drawInBatch(Language.getInstance().getVisualOrder(text), x, y, -1, shadow, matrix4f, irendertypebuffer$impl, Font.DisplayMode.SEE_THROUGH, 0, lightCoords);
 
-        irendertypebuffer$impl.endBatch();
-        RenderSystem.enableDepthTest();
+//        RenderSystem.disableDepthTest();
+
+//        RenderSystem.enableDepthTest();
     }
+
+    public record RenderInfo(List<FormattedText> textLines, float scaleFactor, float maxTxtHeight, float shadowOffset){}
 
     public static class CharacterManagerMixer extends StringSplitter {
 

@@ -26,7 +26,7 @@ public class Ticker {
 
     @SubscribeEvent
     protected static void renderTick(EntityTickEvent.Pre event) {
-            partialTicks = ClientUtil.getMinecraft().getTimer().getGameTimeDeltaPartialTick(true);
+            partialTicks = ClientUtil.getMinecraft().getDeltaTracker().getGameTimeDeltaPartialTick(true);
     }
 
     @SubscribeEvent

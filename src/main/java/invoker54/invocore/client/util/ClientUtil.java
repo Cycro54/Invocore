@@ -1,38 +1,57 @@
 package invoker54.invocore.client.util;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.Lighting;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import invoker54.invocore.client.Ticker;
+import net.minecraft.CrashReport;
+import net.minecraft.CrashReportCategory;
+import net.minecraft.ReportedException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.gui.render.TextureSetup;
+import net.minecraft.client.gui.render.pip.OversizedItemRenderer;
+import net.minecraft.client.gui.render.state.BlitRenderState;
+import net.minecraft.client.gui.render.state.ColoredRectangleRenderState;
+import net.minecraft.client.gui.render.state.GuiItemRenderState;
+import net.minecraft.client.gui.render.state.pip.OversizedItemRenderState;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.item.TrackingItemStackRenderState;
+import net.minecraft.client.renderer.rendertype.RenderSetup;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
+import org.jetbrains.annotations.NotNull;
+import org.joml.Matrix3x2f;
+import org.joml.Matrix3x2fStack;
+import org.joml.Vector2f;
+import org.joml.Vector3f;
+import org.jspecify.annotations.Nullable;
 
+import java.awt.*;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class ClientUtil {
     private static Minecraft mC;
@@ -41,280 +60,442 @@ public class ClientUtil {
     // Directly reference a log4j logger.
     private static final Logger LOGGER = LogManager.getLogger();
 
-    public static Font getFont(){
+    public static Function<RenderPipeline, RenderPipeline> pipelineConvertor;
+//    public static final List<Runnable> cachedRenderList = new ArrayList<>();
+
+    public static Font getFont() {
         return getMinecraft().font;
     }
-    public static Minecraft getMinecraft(){
+
+    public static Minecraft getMinecraft() {
         if (mC == null) mC = Minecraft.getInstance();
         return mC;
     }
+
     public static Player getPlayer() {
         return getMinecraft().player;
     }
-    public static Level getWorld(){
+
+    public static Level getWorld() {
         return getMinecraft().level;
     }
 
     //This will face the player dependent on the players position, NOT camera orientation.
-    public static void drawWorldLine(PoseStack stack, Vec3 origin, Vec3 target, float lineWidth, int color){
+//    public static void drawWorldLine(Matrix3x2fStack stack, Vec3 origin, Vec3 target, float lineWidth, int color){
+//
+//        stack.pushPose();
+//        Vec3 cam = getMinecraft().gameRenderer.getMainCamera().getPosition().reverse();
+//        stack.translate(cam.x(), cam.y(), cam.z());
+//        cam = cam.reverse();
+//        Matrix4f lastPos = stack.last().pose();
+//
+//        float f3 = (float)(color >> 24 & 255) / 255.0F;
+//        float f = (float)(color >> 16 & 255) / 255.0F;
+//        float f1 = (float)(color >> 8 & 255) / 255.0F;
+//        float f2 = (float)(color & 255) / 255.0F;
+//        //This gives me the up/down vector of the plane
+//        Vec3 directionVector = target.vectorTo(cam).cross(origin.vectorTo(cam)).normalize();
+//
+//        Vec3 originUP = origin.add(directionVector.scale(lineWidth/2F));
+//        Vec3 originDOWN = origin.add(directionVector.scale(-lineWidth/2F));
+//        Vec3 targetUP = target.add(directionVector.scale(lineWidth/2F));
+//        Vec3 targetDOWN = target.add(directionVector.scale(-lineWidth/2F));
+//
+//        BufferBuilder bufferbuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+//        RenderSystem.disableCull();
+//        RenderSystem.enableBlend();
+////        RenderSystem.disableTexture();
+//        RenderSystem.defaultBlendFunc();
+////        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+//        bufferbuilder.addVertex(lastPos, (float) originUP.x(), (float) originUP.y(), (float) originUP.z()).setColor(f, f1, f2, f3);
+//        bufferbuilder.addVertex(lastPos, (float)targetUP.x(), (float)targetUP.y(), (float)targetUP.z()).setColor(f, f1, f2, f3);
+//        bufferbuilder.addVertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).setColor(f, f1, f2, f3);
+//        bufferbuilder.addVertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).setColor(f, f1, f2, f3);
+//        BufferUploader.drawWithShader(bufferbuilder.build());
+////        RenderSystem.enableTexture();
+//        RenderSystem.disableBlend();
+//        RenderSystem.enableCull();
+//        stack.popPose();
+//    }
+//    public static void drawWorldLine(Matrix3x2fStack stack, Vec3 origin, Vec3 target, float lineWidth, float u0, float imageWidth, float v0, float imageHeight, float imageScale){
+//        stack.pushPose();
+//        Vec3 cam = getMinecraft().gameRenderer.getMainCamera().getPosition().reverse();
+////        Vector3d cam = getWorld().player.position().inverse();
+//        stack.translate(cam.x(), cam.y(), cam.z());
+//        cam = cam.reverse();
+//        Matrix4f lastPos = stack.last().pose();
+//
+//        u0 /= imageScale;
+//        float u1 = u0 + (imageWidth/imageScale);
+//        v0 /= imageScale;
+//        float v1 = v0 + (imageHeight/imageScale);
+//        //This gives me the up/down vector of the plane
+//        Vec3 directionVector = target.vectorTo(cam).cross(origin.vectorTo(cam)).normalize();
+//
+//        Vec3 originUP = origin.add(directionVector.scale(lineWidth/2F));
+//        Vec3 originDOWN = origin.add(directionVector.scale(-lineWidth/2F));
+//        Vec3 targetUP = target.add(directionVector.scale(lineWidth/2F));
+//        Vec3 targetDOWN = target.add(directionVector.scale(-lineWidth/2F));
+//
+//        BufferBuilder bufferbuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+//        RenderSystem.disableCull();
+//        RenderSystem.enableBlend();
+////        RenderSystem.enableTexture();
+//        RenderSystem.defaultBlendFunc();
+//        bufferbuilder.addVertex(lastPos, (float) originUP.x(), (float) originUP.y(), (float) originUP.z()).setUv(u0, v0);
+//        bufferbuilder.addVertex(lastPos, (float)targetUP.x(), (float)targetUP.y(), (float)targetUP.z()).setUv(u1, v0);
+//        bufferbuilder.addVertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).setUv(u1, v1);
+//        bufferbuilder.addVertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).setUv(u0, v1);
+//        BufferUploader.drawWithShader(bufferbuilder.build());
+//
 
-        stack.pushPose();
-        Vec3 cam = getMinecraft().gameRenderer.getMainCamera().getPosition().reverse();
-        stack.translate(cam.x(), cam.y(), cam.z());
-        cam = cam.reverse();
-        Matrix4f lastPos = stack.last().pose();
+    /// /        RenderSystem.disableTexture();
+//        RenderSystem.disableBlend();
+//        RenderSystem.enableCull();
+//        stack.popPose();
+//    }
+//    public static void blitImage(Matrix3x2fStack stack, AbstractTexture texture, InvoZone renderZone, InvoZone imageZone, float fullImageWidth, float fullImageHeight){
+//        Minecraft mc = getMinecraft();
+//        int xPos = (int)mc.mouseHandler.getScaledXPos(mc.getWindow());
+//        int yPos = (int)mc.mouseHandler.getScaledYPos(mc.getWindow());
+//        GuiGraphics graphics = new GuiGraphics(getMinecraft(), new GuiRenderState(),xPos, yPos);
+//        graphics.pose().set(stack);
+//
+//        blitImage(graphics, texture, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(),
+//                imageZone.x(), imageZone.width(), imageZone.y(), imageZone.height(), fullImageWidth, fullImageHeight);
+//    }
+    public record Custom3DRenderState(Consumer<VertexConsumer> consumer,
+                                      RenderType renderType) implements SubmitNodeCollector.CustomGeometryRenderer {
 
-        float f3 = (float)(color >> 24 & 255) / 255.0F;
-        float f = (float)(color >> 16 & 255) / 255.0F;
-        float f1 = (float)(color >> 8 & 255) / 255.0F;
-        float f2 = (float)(color & 255) / 255.0F;
-        //This gives me the up/down vector of the plane
-        Vec3 directionVector = target.vectorTo(cam).cross(origin.vectorTo(cam)).normalize();
-
-        Vec3 originUP = origin.add(directionVector.scale(lineWidth/2F));
-        Vec3 originDOWN = origin.add(directionVector.scale(-lineWidth/2F));
-        Vec3 targetUP = target.add(directionVector.scale(lineWidth/2F));
-        Vec3 targetDOWN = target.add(directionVector.scale(-lineWidth/2F));
-
-        BufferBuilder bufferbuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        RenderSystem.disableCull();
-        RenderSystem.enableBlend();
-//        RenderSystem.disableTexture();
-        RenderSystem.defaultBlendFunc();
-//        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        bufferbuilder.addVertex(lastPos, (float) originUP.x(), (float) originUP.y(), (float) originUP.z()).setColor(f, f1, f2, f3);
-        bufferbuilder.addVertex(lastPos, (float)targetUP.x(), (float)targetUP.y(), (float)targetUP.z()).setColor(f, f1, f2, f3);
-        bufferbuilder.addVertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).setColor(f, f1, f2, f3);
-        bufferbuilder.addVertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).setColor(f, f1, f2, f3);
-        BufferUploader.drawWithShader(bufferbuilder.build());
-//        RenderSystem.enableTexture();
-        RenderSystem.disableBlend();
-        RenderSystem.enableCull();
-        stack.popPose();
-    }
-    public static void drawWorldLine(PoseStack stack, Vec3 origin, Vec3 target, float lineWidth, float u0, float imageWidth, float v0, float imageHeight, float imageScale){
-        stack.pushPose();
-        Vec3 cam = getMinecraft().gameRenderer.getMainCamera().getPosition().reverse();
-//        Vector3d cam = getWorld().player.position().inverse();
-        stack.translate(cam.x(), cam.y(), cam.z());
-        cam = cam.reverse();
-        Matrix4f lastPos = stack.last().pose();
-
-        u0 /= imageScale;
-        float u1 = u0 + (imageWidth/imageScale);
-        v0 /= imageScale;
-        float v1 = v0 + (imageHeight/imageScale);
-        //This gives me the up/down vector of the plane
-        Vec3 directionVector = target.vectorTo(cam).cross(origin.vectorTo(cam)).normalize();
-
-        Vec3 originUP = origin.add(directionVector.scale(lineWidth/2F));
-        Vec3 originDOWN = origin.add(directionVector.scale(-lineWidth/2F));
-        Vec3 targetUP = target.add(directionVector.scale(lineWidth/2F));
-        Vec3 targetDOWN = target.add(directionVector.scale(-lineWidth/2F));
-
-        BufferBuilder bufferbuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        RenderSystem.disableCull();
-        RenderSystem.enableBlend();
-//        RenderSystem.enableTexture();
-        RenderSystem.defaultBlendFunc();
-        bufferbuilder.addVertex(lastPos, (float) originUP.x(), (float) originUP.y(), (float) originUP.z()).setUv(u0, v0);
-        bufferbuilder.addVertex(lastPos, (float)targetUP.x(), (float)targetUP.y(), (float)targetUP.z()).setUv(u1, v0);
-        bufferbuilder.addVertex(lastPos, (float)targetDOWN.x(), (float)targetDOWN.y(), (float)targetDOWN.z()).setUv(u1, v1);
-        bufferbuilder.addVertex(lastPos, (float)originDOWN.x(), (float)originDOWN.y(), (float)originDOWN.z()).setUv(u0, v1);
-        BufferUploader.drawWithShader(bufferbuilder.build());
-        
-//        RenderSystem.disableTexture();
-        RenderSystem.disableBlend();
-        RenderSystem.enableCull();
-        stack.popPose();
-    }
-    public static void blitImage(PoseStack stack, InvoZone renderZone, InvoZone imageZone, float fullImageWidth, float fullImageHeight){
-        blitImage(stack, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(),
-                imageZone.x(), imageZone.width(), imageZone.y(), imageZone.height(), fullImageWidth, fullImageHeight);
-    }
-    public static void blitImage(PoseStack stack, float x0, float width, float y0, float height, float u0, float imageWidth, float v0, float imageHeight, float fullImageWidth, float fullImageHeight){
-        Matrix4f lastPos = stack.last().pose();
-        float x1 = x0 + width;
-        float y1 = y0 + height;
-        u0 /= fullImageWidth;
-        float u1 = u0 + (imageWidth/fullImageWidth);
-        v0 /= fullImageHeight;
-        float v1 = v0 + (imageHeight/fullImageHeight);
-
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
-
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        BufferBuilder bufferbuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferbuilder.addVertex(lastPos, x0, y1, (float)0).setUv(u0, v1);
-        bufferbuilder.addVertex(lastPos, x1, y1, (float)0).setUv(u1, v1);
-        bufferbuilder.addVertex(lastPos, x1, y0, (float)0).setUv(u1, v0);
-        bufferbuilder.addVertex(lastPos, x0, y0, (float)0).setUv(u0, v0);
-        BufferUploader.drawWithShader(bufferbuilder.build());
-
-        RenderSystem.enableDepthTest();
-    }
-    public static void blitColor(PoseStack stack, InvoZone renderZone, int color){
-        blitColor(stack, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), color);
-    }
-    public static void blitColor(PoseStack stack, float x0, float width, float y0, float height, int color){
-        Matrix4f lastPos = stack.last().pose();
-        float x1 = x0 + width;
-        float y1 = y0 + height;
-
-        float f3 = (float)(color >> 24 & 255) / 255.0F;
-        float f = (float)(color >> 16 & 255) / 255.0F;
-        float f1 = (float)(color >> 8 & 255) / 255.0F;
-        float f2 = (float)(color & 255) / 255.0F;
-
-        RenderSystem.enableBlend();
-//        RenderSystem.disableTexture();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
-
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        BufferBuilder bufferbuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        bufferbuilder.addVertex(lastPos, x0, y1, (float)0).setColor(f, f1, f2, f3);
-        bufferbuilder.addVertex(lastPos, x1, y1, (float)0).setColor(f, f1, f2, f3);
-        bufferbuilder.addVertex(lastPos, x1, y0, (float)0).setColor(f, f1, f2, f3);
-        bufferbuilder.addVertex(lastPos, x0, y0, (float)0).setColor(f, f1, f2, f3);
-        BufferUploader.drawWithShader(bufferbuilder.build());
-
-//        RenderSystem.enableTexture();
-        RenderSystem.disableBlend();
-        RenderSystem.enableDepthTest();
-    }
-    public static void blitItem(PoseStack stack, InvoZone renderZone, ItemStack itemStack) {
-        blitItem(stack, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), itemStack);
-    }
-    public static void blitItem(PoseStack stack, float x0, float width, float y0, float height, ItemStack itemStack){
-        getTextureManager().getTexture(TextureAtlas.LOCATION_BLOCKS).setFilter(false, false);
-        RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
-        RenderSystem.enableBlend();
-        RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.disableDepthTest();
-
-        MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
-        ItemRenderer renderer = mC.getItemRenderer();
-        BakedModel bakedModel = renderer.getModel(itemStack, null, null, 0);
-
-        Matrix4fStack posestack = RenderSystem.getModelViewStack();
-        posestack.pushMatrix();
-        posestack.translate(x0, y0, (100.0F));
-        posestack.translate(width/2, height/2, 0.0F);
-        boolean flag = !bakedModel.usesBlockLight();
-        if (flag) {
-            Lighting.setupForFlatItems();
-            posestack.scale(1.0F, -1.0F, 1.0F);
+        @Override
+        public void render(PoseStack.@NotNull Pose pose, @NotNull VertexConsumer vertexConsumer) {
+            consumer.accept(vertexConsumer);
         }
-        else {
-            Lighting.setupFor3DItems();
-        }
-        posestack.scale(width, height, 1.0F);
-//        posestack.translate(x0, y0, 300.0F);
-//        posestack.scale(width, height, 1.0F);
-//        posestack.translate(width/2, height/2, 0.0F);
-        RenderSystem.applyModelViewMatrix();
-        renderer.render(itemStack, ItemDisplayContext.GUI, false, stack, bufferSource, 15728880, OverlayTexture.NO_OVERLAY, bakedModel);
-        bufferSource.endBatch();
-        if (flag) {
-            Lighting.setupFor3DItems();
-        }
-        posestack.popMatrix();
-        RenderSystem.applyModelViewMatrix();
-
-        RenderSystem.enableDepthTest();
     }
-    public static Vec3 smoothLerp(Vec3 oldPos, Vec3 newPos, boolean useDelta){
+//
+//    public static void renderAll() {
+//        cachedRenderList.forEach(Runnable::run);
+//        cachedRenderList.clear();
+//    }
+
+    public static void blit2DImage(GuiGraphics graphics, Image image) {
+        InvoZone renderZone = image.getRenderZone().copy();
+        InvoZone uvZone = image.getUVZone();
+        AbstractTexture texture = ClientUtil.getMinecraft().getTextureManager().getTexture(image.location);
+
+        Matrix3x2fStack poseStack = graphics.pose().pushMatrix();
+        poseStack.translate(renderZone.x(), renderZone.y());
+        poseStack.scale(Math.abs(renderZone.width()), Math.abs(renderZone.height()));
+        graphics.guiRenderState.submitBlitToCurrentLayer(new BlitRenderState(RenderPipelines.GUI_TEXTURED,
+                TextureSetup.singleTexture(texture.getTextureView(), texture.getSampler()),
+                new Matrix3x2f(graphics.pose()), 0, 0, 1, 1,
+                uvZone.x(), uvZone.right(), uvZone.y(), uvZone.down(), -1, graphics.peekScissorStack()));
+        poseStack.popMatrix();
+    }
+
+    public static void blit3DImage(PoseStack stack, Image image) {
+        blit3DImage(stack, RenderType.create("InvoImage", RenderSetup.builder(RenderPipelines.GUI_TEXTURED)
+                .withTexture("Sampler0", image.location).createRenderSetup()), image);
+    }
+
+    public static void blit3DImage(PoseStack poseStack, RenderType renderType, Image image) {
+        InvoZone renderZone = image.getRenderZone().copy();
+        InvoZone uvZone = image.getUVZone();
+//    AbstractTexture texture = ClientUtil.getMinecraft().getTextureManager().getTexture(image.location);
+        poseStack.pushPose();
+//            poseStack.translate(renderZone.x(), renderZone.y(), 0);
+//            poseStack.scale(Math.abs(renderZone.width()), Math.abs(renderZone.height()), 1);
+        ClientUtil.getMinecraft().gameRenderer.getSubmitNodeStorage().submitCustomGeometry(poseStack, renderType, new Custom3DRenderState(
+                (vertexConsumer -> {
+                    vertexConsumer.addVertex(poseStack.last(), renderZone.x(), renderZone.down(), (float) 0).setColor(Color.WHITE.getRGB()).setUv(uvZone.x(), uvZone.down());
+                    vertexConsumer.addVertex(poseStack.last(), renderZone.right(), renderZone.down(), (float) 0).setColor(Color.WHITE.getRGB()).setUv(uvZone.right(), uvZone.down());
+                    vertexConsumer.addVertex(poseStack.last(), renderZone.right(), renderZone.y(), (float) 0).setColor(Color.WHITE.getRGB()).setUv(uvZone.right(), uvZone.y());
+                    vertexConsumer.addVertex(poseStack.last(), renderZone.x(), renderZone.y(), (float) 0).setColor(Color.WHITE.getRGB()).setUv(uvZone.x(), uvZone.y());
+                })
+                , renderType));
+        ClientUtil.getMinecraft().gameRenderer.getFeatureRenderDispatcher().renderAllFeatures();
+        ClientUtil.getMinecraft().renderBuffers().bufferSource().endBatch();
+        poseStack.popPose();
+    }
+
+    public static void blit2DColor(GuiGraphics graphics, InvoZone renderZone, int color) {
+        Matrix3x2fStack poseStack = graphics.pose().pushMatrix();
+        poseStack.translate(renderZone.x(), renderZone.y());
+        poseStack.scale(Math.abs(renderZone.width()), Math.abs(renderZone.height()));
+        graphics.guiRenderState.submitGuiElement(new ColoredRectangleRenderState(RenderPipelines.GUI,
+                TextureSetup.noTexture(), new Matrix3x2f(graphics.pose()), 0, 0, 1, 1, color, color, graphics.peekScissorStack()));
+        poseStack.popMatrix();
+    }
+
+    public static void blit3DColor(PoseStack poseStack, InvoZone renderZone, int color) {
+        blit3DColor(poseStack, RenderType.create("InvoColor", RenderSetup.builder(RenderPipelines.GUI).createRenderSetup()), renderZone, color);
+    }
+
+    public static void blit3DColor(PoseStack poseStack, RenderType renderType, InvoZone renderZone, int color) {
+        poseStack.pushPose();
+//            poseStack.translate(renderZone.x(), renderZone.y(), 0);
+//            poseStack.scale(Math.abs(renderZone.width()), Math.abs(renderZone.height()), 1);
+        ClientUtil.getMinecraft().gameRenderer.getSubmitNodeStorage().submitCustomGeometry(poseStack, renderType, new Custom3DRenderState(
+                (vertexConsumer -> {
+                    vertexConsumer.addVertex(poseStack.last(), renderZone.x(), renderZone.down(), (float) 0).setColor(color);
+                    vertexConsumer.addVertex(poseStack.last(), renderZone.right(), renderZone.down(), (float) 0).setColor(color);
+                    vertexConsumer.addVertex(poseStack.last(), renderZone.right(), renderZone.y(), (float) 0).setColor(color);
+                    vertexConsumer.addVertex(poseStack.last(), renderZone.x(), renderZone.y(), (float) 0).setColor(color);
+                })
+                , renderType));
+        ClientUtil.getMinecraft().gameRenderer.getFeatureRenderDispatcher().renderAllFeatures();
+        ClientUtil.getMinecraft().renderBuffers().bufferSource().endBatch();
+        poseStack.popPose();
+    }
+
+    public static class InvoItemState extends GuiItemRenderState{
+        private final InvoZone renderZone;
+
+        public InvoItemState(String name, Matrix3x2f pose, TrackingItemStackRenderState itemStackRenderState, InvoZone renderZone,@Nullable ScreenRectangle scissorArea) {
+            super(name, pose, itemStackRenderState, 0, 0, scissorArea);
+            this.renderZone = renderZone;
+//            LOGGER.error("dawd: " + this.itemStackRenderState().isOversizedInGui());
+        }
+
+        public InvoZone getRenderZone(){
+            return this.renderZone;
+        }
+
+//        @Override
+//        public @NotNull Matrix3x2f pose() {
+//            return new Matrix3x2f(super.pose()).scale(0.5f, 0.5f);
+//        }
+
+//        @Override
+//        public @Nullable ScreenRectangle bounds() {
+//            return new InvoZone(0, customWidth, 0, customHeight).rect();
+//        }
+
+        @Override
+        public @Nullable ScreenRectangle oversizedItemBounds() {
+//            float originalArea = 16 * 16;
+//            float modifiedArea = customWidth * customHeight;
+//            ScreenRectangle overBounds = super.oversizedItemBounds();
+//            if (overBounds == null) return null;
+//            LOGGER.error("This is running at least");
+            return this.renderZone.copy().rect(false);
+        }
+    }
+
+//    public static class InvoThingy extends TrackingItemStackRenderState{
+//        @Override
+//        public AABB getModelBoundingBox() {
+//            return super.getModelBoundingBox().contract(-1,-1,-1);
+//        }
+//    }
+
+    public static void blit2DItem(GuiGraphics graphics, InvoZone renderZone, ItemStack itemStack) {
+        Matrix3x2fStack poseStack = graphics.pose().pushMatrix();
+//            poseStack.translate(renderZone.x(), renderZone.y());
+//            poseStack.scale(1,1);
+
+        if (!itemStack.isEmpty()) {
+//            TrackingItemStackRenderState trackingitemstackrenderstate = new TrackingItemStackRenderState();
+//            setDepthTestOverride(DEPTH_TEST_OVERRIDE.NO_DEPTH_TEST);
+            try {
+                TrackingItemStackRenderState trackingitemstackrenderstate = new TrackingItemStackRenderState();
+                getMinecraft().getItemModelResolver().updateForTopItem(trackingitemstackrenderstate, itemStack, ItemDisplayContext.GUI, null, null, 0);
+                OversizedItemRenderer oversizeditemrenderer = new OversizedItemRenderer(getMinecraft().renderBuffers().bufferSource());
+                GuiItemRenderState itemRenderState = new InvoItemState(itemStack.getItem().getName().toString(), new Matrix3x2f(poseStack),
+                        trackingitemstackrenderstate, renderZone, graphics.peekScissorStack());
+                ScreenRectangle screenrectangle = renderZone.rect(true);
+                OversizedItemRenderState oversizeditemrenderstate = new OversizedItemRenderState(
+                        itemRenderState, screenrectangle.left(), screenrectangle.top(), screenrectangle.right(), screenrectangle.bottom());
+                oversizeditemrenderer.prepare(oversizeditemrenderstate, graphics.guiRenderState, getMinecraft().getWindow().getGuiScale());
+//                    altStack.translate(renderZone.x(), renderZone.y(), 0);
+//                    graphics.renderItem();
+//                    trackingitemstackrenderstate.submit(altStack, getMinecraft().gameRenderer.getSubmitNodeStorage(), 15728880, OverlayTexture.NO_OVERLAY, 0);
+//                    trackingitemstackrenderstate.setOversizedInGui(true);
+//                    graphics.guiRenderState.submitItem();
+//                    LOGGER.error("Is it oversized? " + trackingitemstackrenderstate.isOversizedInGui());
+//                    ClientUtil.getMinecraft().gameRenderer.getFeatureRenderDispatcher().renderAllFeatures();
+//                    ClientUtil.getMinecraft().renderBuffers().bufferSource().endBatch();
+//                    oversizeditemrenderer.close();
+//                    oversizeditemrenderer.invalidateTexture();
+            } catch (Throwable throwable) {
+                CrashReport crashreport = CrashReport.forThrowable(throwable, "Rendering item");
+                CrashReportCategory crashreportcategory = crashreport.addCategory("Item being rendered");
+                crashreportcategory.setDetail("Item Type", () -> String.valueOf(itemStack.getItem()));
+                crashreportcategory.setDetail("Item Components", () -> String.valueOf(itemStack.getComponents()));
+                crashreportcategory.setDetail("Item Foil", () -> String.valueOf(itemStack.hasFoil()));
+                throw new ReportedException(crashreport);
+            }
+//            setDepthTestOverride(DEPTH_TEST_OVERRIDE.DEFAULT);
+//                altStack.popPose();
+        }
+
+//            graphics.submitPictureInPictureRenderState(itemStack, 0, 0);
+        poseStack.popMatrix();
+    }
+
+    public static void blit3DItem(PoseStack poseStack, InvoZone renderZone, ItemStack itemStack, Level level, Entity entity, int seed) {
+        PoseStack altStack = new PoseStack();
+        altStack.last().set(poseStack.last());
+        pipelineConvertor = (t) -> t.toBuilder().withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST).build();
+//            LOGGER.error("Starting");
+        if (!itemStack.isEmpty()) {
+//            TrackingItemStackRenderState trackingitemstackrenderstate = new TrackingItemStackRenderState();
+//            setDepthTestOverride(DEPTH_TEST_OVERRIDE.NO_DEPTH_TEST);
+            ItemStackRenderState trackingitemstackrenderstate = new ItemStackRenderState();
+            getMinecraft().getItemModelResolver().updateForTopItem(trackingitemstackrenderstate, itemStack, ItemDisplayContext.GUI, level, entity, seed);
+            altStack.pushPose();
+            try {
+//                    altStack.translate(renderZone.x(), renderZone.y(), 0);
+                altStack.scale(renderZone.width(), -renderZone.height(), 1);
+                trackingitemstackrenderstate.submit(altStack, getMinecraft().gameRenderer.getSubmitNodeStorage(), 15728880, OverlayTexture.NO_OVERLAY, 0);
+                ClientUtil.getMinecraft().gameRenderer.getFeatureRenderDispatcher().renderAllFeatures();
+                ClientUtil.getMinecraft().renderBuffers().bufferSource().endBatch();
+            } catch (Throwable throwable) {
+                CrashReport crashreport = CrashReport.forThrowable(throwable, "Rendering item");
+                CrashReportCategory crashreportcategory = crashreport.addCategory("Item being rendered");
+                crashreportcategory.setDetail("Item Type", () -> String.valueOf(itemStack.getItem()));
+                crashreportcategory.setDetail("Item Components", () -> String.valueOf(itemStack.getComponents()));
+                crashreportcategory.setDetail("Item Foil", () -> String.valueOf(itemStack.hasFoil()));
+                throw new ReportedException(crashreport);
+            }
+//            setDepthTestOverride(DEPTH_TEST_OVERRIDE.DEFAULT);
+            altStack.popPose();
+        }
+//            LOGGER.error("Ending");
+        pipelineConvertor = null;
+    }
+
+//        public static void blitItem(GuiGraphics graphics, float x0, float width, float y0, float height, ItemStack stack){
+//        getTextureManager().getTexture(TextureAtlas.LOCATION_BLOCKS).setFilter(false, false);
+//        RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
+//        RenderSystem.enableBlend();
+//        RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+//        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+//        RenderSystem.disableDepthTest();
+//
+//        MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
+//        ItemRenderer renderer = mC.getItemRenderer();
+//        BakedModel bakedModel = renderer.getModel(stack, null, null, 0);
+//
+//        Matrix4fStack poseStack = RenderSystem.getModelViewStack();
+//        poseStack.pushMatrix();
+//        poseStack.translate(x0, y0, (100.0F));
+//        poseStack.translate(width/2, height/2, 0.0F);
+//        boolean flag = !bakedModel.usesBlockLight();
+//        if (flag) {
+//            Lighting.setupForFlatItems();
+//            poseStack.scale(1.0F, -1.0F, 1.0F);
+//        }
+//        else {
+//            Lighting.setupFor3DItems();
+//        }
+//        poseStack.scale(width, height, 1.0F);
+
+    /// /        poseStack.translate(x0, y0, 300.0F);
+    /// /        poseStack.scale(width, height, 1.0F);
+    /// /        poseStack.translate(width/2, height/2, 0.0F);
+//        RenderSystem.applyModelViewMatrix();
+//        renderer.render(stack, ItemDisplayContext.GUI, false, stack, bufferSource, 15728880, OverlayTexture.NO_OVERLAY, bakedModel);
+//        bufferSource.endBatch();
+//        if (flag) {
+//            Lighting.setupFor3DItems();
+//        }
+//        poseStack.popMatrix();
+//        RenderSystem.applyModelViewMatrix();
+//
+//        RenderSystem.enableDepthTest();
+//        
+//    }
+    public static Vec3 smoothLerp(Vec3 oldPos, Vec3 newPos, boolean useDelta) {
 //        LOGGER.debug("PARTIAL TICK IN CLIENT UTIL IS: " + ClientUtil.getWorld().getFrameTime());
         return new Vec3(
                 smoothLerp(oldPos.x, newPos.x, useDelta),
                 smoothLerp(oldPos.y, newPos.y, useDelta),
                 smoothLerp(oldPos.z, newPos.z, useDelta));
     }
-    public static double smoothLerp(double oldDouble, double newDouble, boolean useDelta){
-        return Mth.lerp(useDelta ? Ticker.getDelta(true,true) : ClientUtil.getMinecraft().getFrameTimeNs(),oldDouble,newDouble);
+
+    public static double smoothLerp(double oldDouble, double newDouble, boolean useDelta) {
+        return Mth.lerp(useDelta ? Ticker.getDelta(true, true) : ClientUtil.getMinecraft().getFrameTimeNs(), oldDouble, newDouble);
     }
 
-    public static void copyEntityMovement(LivingEntity copier, LivingEntity toCopy){
-        copier.moveTo(toCopy.position());
-        copier.xo = toCopy.xo;
-        copier.xOld = toCopy.xOld;
-        copier.yo = toCopy.yo;
-        copier.yOld = toCopy.yOld;
-        copier.zo = toCopy.zo;
-        copier.zOld = toCopy.zOld;
-        copier.setDeltaMovement(toCopy.getDeltaMovement());
-        copier.setYHeadRot(toCopy.getYHeadRot());
-        copier.yHeadRotO = toCopy.yHeadRotO;
-        copier.setYBodyRot(toCopy.yBodyRot);
-        copier.yBodyRotO = toCopy.yBodyRotO;
-    }
+//    public static void copyEntityMovement(LivingEntity copier, LivingEntity toCopy){
+//        copier.moveTo(toCopy.position());
+//        copier.xo = toCopy.xo;
+//        copier.xOld = toCopy.xOld;
+//        copier.yo = toCopy.yo;
+//        copier.yOld = toCopy.yOld;
+//        copier.zo = toCopy.zo;
+//        copier.zOld = toCopy.zOld;
+//        copier.setDeltaMovement(toCopy.getDeltaMovement());
+//        copier.setYHeadRot(toCopy.getYHeadRot());
+//        copier.yHeadRotO = toCopy.yHeadRotO;
+//        copier.setYBodyRot(toCopy.yBodyRot);
+//        copier.yBodyRotO = toCopy.yBodyRotO;
+//    }
 
-    public static boolean inBounds (float xSpot, float ySpot, Bounds bounds){
+    public static boolean inBounds(float xSpot, float ySpot, Bounds bounds) {
         if (xSpot < bounds.x0 || xSpot > bounds.x1) return false;
         if (ySpot < bounds.y0 || ySpot > bounds.y1) return false;
 
-        return  true;
+        return true;
     }
+
     protected static final ArrayList<Bounds> cropBounds = new ArrayList<>();
-    public static void beginCrop (double x, double width, double y, double height, boolean fresh){
-        if (fresh) cropBounds.add(new Bounds((int) x, (int) width, (int) y, (int) height));
-//        Bounds bounds = cropBounds.get(cropBounds.size() - 1);
-//        XPShop.LOGGER.debug((String.valueOf(x)) + (bounds.x0));
-//        XPShop.LOGGER.debug((String.valueOf(width)) + (bounds.x1 - bounds.x0));
-//        XPShop.LOGGER.debug((String.valueOf(y)) + (bounds.y0));
-//        XPShop.LOGGER.debug((String.valueOf(height)) + (bounds.y1 - bounds.y0));
-        double scale = getMinecraft().getWindow().getGuiScale();
-        int windowHeight = getMinecraft().getWindow().getGuiScaledHeight();
+//    public static void beginCrop (double x, double width, double y, double height, boolean fresh){
+//        if (fresh) cropBounds.add(new Bounds((int) x, (int) width, (int) y, (int) height));
+////        Bounds bounds = cropBounds.get(cropBounds.size() - 1);
+////        XPShop.LOGGER.debug((String.valueOf(x)) + (bounds.x0));
+////        XPShop.LOGGER.debug((String.valueOf(width)) + (bounds.x1 - bounds.x0));
+////        XPShop.LOGGER.debug((String.valueOf(y)) + (bounds.y0));
+////        XPShop.LOGGER.debug((String.valueOf(height)) + (bounds.y1 - bounds.y0));
+//        double scale = getMinecraft().getWindow().getGuiScale();
+//        int windowHeight = getMinecraft().getWindow().getGuiScaledHeight();
+//
+//        //This is inverses y since scissor test requires it
+//        y = windowHeight - (height + y);
+//
+////        LOGGER.debug("The y before is: " + y);
+////        LOGGER.debug("The height before is: " + height);
+//        x *= scale;
+//        y *= scale;
+//        width *= scale;
+//        height *= scale;
+//
 
-        //This is inverses y since scissor test requires it
-        y = windowHeight - (height + y);
+    /// /        LOGGER.debug("The y is: " + y);
+    /// /        LOGGER.debug("The height is: " + height);
+//
+//        RenderSystem.enableScissor((int) x, (int) y, (int) width, (int) height);
+//        //LOGGER.debug("Start " + cropBounds.size());
+//    }
+//
+//    public static void endCrop(){
+//        //LOGGER.debug("End " + cropBounds.size());
+//        if (cropBounds.size() != 0) cropBounds.remove(cropBounds.size() - 1);
+//        if (!cropBounds.isEmpty()) {
+//            Bounds cropBound = cropBounds.get(cropBounds.size() - 1);
+//            beginCrop(cropBound.x0, (cropBound.x1 - cropBound.x0), cropBound.y0, cropBound.y1 - cropBound.y0, false);
+//        }
+//        else {
+//            RenderSystem.disableScissor();
+//        }
+//    }
 
-//        LOGGER.debug("The y before is: " + y);
-//        LOGGER.debug("The height before is: " + height);
-        x *= scale;
-        y *= scale;
-        width *= scale;
-        height *= scale;
-
-//        LOGGER.debug("The y is: " + y);
-//        LOGGER.debug("The height is: " + height);
-
-        RenderSystem.enableScissor((int) x, (int) y, (int) width, (int) height);
-        //LOGGER.debug("Start " + cropBounds.size());
-    }
-
-    public static void endCrop(){
-        //LOGGER.debug("End " + cropBounds.size());
-        if (cropBounds.size() != 0) cropBounds.remove(cropBounds.size() - 1);
-        if (!cropBounds.isEmpty()) {
-            Bounds cropBound = cropBounds.get(cropBounds.size() - 1);
-            beginCrop(cropBound.x0, (cropBound.x1 - cropBound.x0), cropBound.y0, cropBound.y1 - cropBound.y0, false);
-        }
-        else {
-            RenderSystem.disableScissor();
-        }
-    }
-
-    public static class Bounds{
+    public static class Bounds {
         int x0;
         int x1;
         int y0;
         int y1;
 
-        public Bounds(int x, int width, int y, int height){
+        public Bounds(int x, int width, int y, int height) {
             this.x0 = x;
             this.x1 = x + width;
             this.y0 = y;
             this.y1 = y + height;
         }
 
-        public Bounds(){}
+        public Bounds() {
+        }
 
         public void adjustBounds(int x, int width, int y, int height) {
             this.x0 = x;
@@ -327,41 +508,44 @@ public class ClientUtil {
         public int getMinX() {
             return x0;
         }
+
         public int getMaxX() {
-        return x1;
+            return x1;
         }
+
         public int getMinY() {
-        return y0;
+            return y0;
         }
+
         public int getMaxY() {
-        return y1;
+            return y1;
         }
     }
-    
-    public static class SimpleButton extends Button {
 
-        public boolean hidden = false;
-
-        public SimpleButton(int x, int y, int width, int height, MutableComponent textComponent, OnPress onPress) {
-            super(x, y, width, height, textComponent, onPress, (a)->textComponent);
-            this.visible = true;
-        }
-
-        @Override
-        protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-            super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
-        }
-    }
-    public static String ticksToTime(int ticks){
+    //    public static class SimpleButton extends Button {
+//
+//        public boolean hidden = false;
+//
+//        public SimpleButton(int x, int y, int width, int height, MutableComponent textComponent, OnPress onPress) {
+//            super(x, y, width, height, textComponent, onPress, (a)->textComponent);
+//            this.visible = true;
+//        }
+//
+//        @Override
+//        protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+//            super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+//        }
+//    }
+    public static String ticksToTime(int ticks) {
         //Each second is 20 ticks
         //each minute is 1200 ticks
         //Each hour is 72000 ticks
         //20 = ticks, 60 = seconds, 60 = minutes
-        int hours = ticks/72000;
+        int hours = ticks / 72000;
         ticks -= (hours * 7200);
-        int minutes = ticks/1200;
+        int minutes = ticks / 1200;
         ticks -= (minutes * 1200);
-        int seconds = ticks/20;
+        int seconds = ticks / 20;
 
         return (hours <= 9 ? "0" : "") + hours + ":" +
                 (minutes <= 9 ? "0" : "") + minutes + ":" +
@@ -383,29 +567,29 @@ public class ClientUtil {
         return formattedNumber.length() > 4 ? formattedNumber.replaceAll("\\.[0-9]+ ", "") : formattedNumber;
     }
 
-    public static TextureManager getTextureManager(){
+    public static TextureManager getTextureManager() {
         return mC.getTextureManager();
     }
 
     public static class Image {
-        protected ResourceLocation location;
+        protected Identifier location;
         protected final InvoZone imageZone;
         protected final InvoZone renderZone;
         protected ImageType type = ImageType.Stretch;
         protected final float fullImageWidth;
         protected final float fullImageHeight;
 
-        public enum ImageType{
+        public enum ImageType {
             Stretch,
             Tile,
             NineSlice
         }
 
-        public Image(ResourceLocation loc, float u0, float imageWidth, float v0, float imageHeight){
-        this(loc, u0, imageWidth, v0, imageHeight, imageWidth, imageHeight);
+        public Image(Identifier loc, float u0, float imageWidth, float v0, float imageHeight) {
+            this(loc, u0, imageWidth, v0, imageHeight, imageWidth, imageHeight);
         }
 
-        public Image(ResourceLocation loc, float u0, float imageWidth, float v0, float imageHeight, float fullImageWidth, float fullImageHeight){
+        public Image(Identifier loc, float u0, float imageWidth, float v0, float imageHeight, float fullImageWidth, float fullImageHeight) {
             this.location = loc;
             this.imageZone = new InvoZone(u0, imageWidth, v0, imageHeight);
             this.renderZone = new InvoZone(0, imageWidth, 0, imageHeight);
@@ -413,34 +597,44 @@ public class ClientUtil {
             this.fullImageHeight = fullImageHeight;
         }
 
-        public void resetScale(){
+        public void resetScale() {
             this.renderZone.setWidth(this.imageZone.width());
             this.renderZone.setHeight(this.imageZone.height());
         }
 
-        public InvoZone getRenderZone(){
+        public InvoZone getRenderZone() {
             return this.renderZone;
         }
 
-        public InvoZone getImageZone(){
+        public InvoZone getImageZone() {
             return this.imageZone;
         }
 
-        public boolean isMouseOver(int mouseX, int mouseY){
+        public InvoZone getUVZone() {
+            return this.imageZone.copy().changeRelativeMultiply(
+                    new InvoZone(0, fullImageWidth, 0, fullImageHeight), new InvoZone(0, 1, 0, 1));
+        }
+
+        public boolean isMouseOver(int mouseX, int mouseY) {
             return mouseX >= renderZone.x() && mouseX <= (renderZone.x() + renderZone.width())
                     && mouseY >= renderZone.y() && mouseY <= (renderZone.y() + renderZone.height());
         }
 
-        public void setType(ImageType imageType){
+        public void setType(ImageType imageType) {
             this.type = imageType;
         }
 
-        public void render(PoseStack stack){
-            RenderSystem.setShaderTexture(0,this.location);
-            blitImage(stack, renderZone, imageZone, fullImageWidth, fullImageHeight);
+        public void render(GuiGraphics graphics) {
+            blit2DImage(graphics, this);
+//            TEXTURE_MANAGER.release(this.location);
+        }
+
+        public void render(PoseStack poseStack) {
+            blit3DImage(poseStack, this);
 //            TEXTURE_MANAGER.release(this.location);
         }
     }
+
 //
 //    public static class SimpleList extends AbstractSelectionList<ListEntry> {
 //        public final List<Component> toolTip = new ArrayList<>();
@@ -488,7 +682,7 @@ public class ClientUtil {
 //            this.y1 = y0 + height;
 //        }
 //        @Override
-//        public void render(PoseStack stack, int xMouse, int yMouse, float partialTicks) {
+//        public void render(Matrix3x2fStack stack, int xMouse, int yMouse, float partialTicks) {
 //            ItemStack f;
 //            if (this.children().isEmpty()) return;
 //
@@ -507,7 +701,7 @@ public class ClientUtil {
 ////        }
 //
 //        @Override
-//        protected void renderList(@NotNull PoseStack stack, int xMouse, int yMouse, float p_238478_6_) {
+//        protected void renderList(@NotNull Matrix3x2fStack stack, int xMouse, int yMouse, float p_238478_6_) {
 //            int i = this.getItemCount();
 //            hoverEntry = null;
 ////            Tessellator tessellator = Tessellator.getInstance();
@@ -621,7 +815,7 @@ public class ClientUtil {
 //            return this.height + (heightPadding * 2);
 //        }
 //        @Override
-//        public void render(PoseStack stack, int index, int y0, int x0, int rowWidth, int rowHeight, int xMouse, int yMouse, boolean isMouseOver, float partialTicks
+//        public void render(Matrix3x2fStack stack, int index, int y0, int x0, int rowWidth, int rowHeight, int xMouse, int yMouse, boolean isMouseOver, float partialTicks
 //        ) {
 //            this.isMouseOver = xMouse >= x0 && xMouse <= (x0 + rowWidth) && yMouse >= y0 && yMouse <= (y0 + rowHeight);
 //        }

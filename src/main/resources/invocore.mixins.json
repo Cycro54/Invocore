@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "invoker54.invocore.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "invocore.refmap.json",
+  "client": [
+    "GlRenderPipelineMixin",
+    "OversizedItemRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

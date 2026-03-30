@@ -11,7 +11,7 @@ import net.neoforged.neoforge.client.event.InputEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@EventBusSubscriber(value = Dist.CLIENT, modid = Invocore.MOD_ID, bus = EventBusSubscriber.Bus.GAME)
+@EventBusSubscriber(value = Dist.CLIENT, modid = Invocore.MOD_ID)
 public class InputEvents {
     private static final Logger LOGGER = LogManager.getLogger();
 

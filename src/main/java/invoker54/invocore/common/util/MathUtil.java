@@ -1,9 +1,96 @@
 package invoker54.invocore.common.util;
 
+import invoker54.invocore.client.util.InvoZone;
+import org.joml.Vector2f;
+
 public class MathUtil {
 
     public static float lerp(double value, double min, double max) {
         return (float) (min + value * (max - min));
+    }
+
+    public static double clampLoop(double value, double min, double max) {
+        if (min == max) return max;
+        if (min > max) {
+            double holder = min;
+            min = max;
+            max = holder;
+        }
+
+        double difference = min - max;
+
+        if (value > max) return clampLoop(value + difference, min, max);
+
+        if (value < min) return clampLoop(value - difference, min, max);
+
+        return value;
+    }
+
+    public static double clampPingPong(double value, double min, double max) {
+        if (min == max) return max;
+        if (min > max) {
+            double holder = min;
+            min = max;
+            max = holder;
+        }
+
+        double difference = min - max;
+
+        if (value > max) return clampLoop(-(value + difference), min, max);
+
+        if (value < min) return clampLoop(-(value - difference), min, max);
+
+        return value;
+    }
+
+    public static Vector2f rotateAroundPoint(Vector2f originPos, Vector2f endPos, double rotateAmount){
+
+        // "Liberated" from: https://stackoverflow.com/questions/2259476/rotating-a-point-about-another-point-2d
+        Vector2f rotatedPoint = new Vector2f(
+                (float) (Math.cos(rotateAmount) * (endPos.x - originPos.x) - Math.sin(rotateAmount) * (endPos.y - originPos.y) + originPos.x),
+                (float) (Math.sin(rotateAmount) * (endPos.x - originPos.x) + Math.cos(rotateAmount) * (endPos.y - originPos.y) + originPos.y)
+        );
+        return rotatedPoint;
+    }
+
+    public static double lookRotation(Vector2f startPos, Vector2f endPos){
+        return lookRotation(0, startPos, endPos);
+    }
+
+    public static double lookRotation(double startRotation, Vector2f startPos, Vector2f endPos){
+        //North is 90 degrees
+        //East is 0 degrees
+        //South is 270 degrees
+        //West is 180 degrees
+
+        double resultRotation = (Math.toDegrees(Math.atan2(endPos.y() - startPos.y(), endPos.x() - startPos.x())));
+        if (resultRotation < 0) resultRotation = 360 + resultRotation;
+
+//        LOGGER.warn("Rotation: " + "start:"+(startRotation)+", result:"+resultRotation+", final:"+( resultRotation - startRotation));
+
+        return resultRotation - startRotation;
+    }
+
+    public static InvoZone zoneLerp(double percentage, InvoZone beginZone, InvoZone endZone){
+        InvoZone lerpZone = beginZone.copy();
+
+        //First middle
+        double middleX = MathUtil.lerp(percentage, beginZone.middleX(), endZone.middleX());
+        double middleY = MathUtil.lerp(percentage, beginZone.middleY(), endZone.middleY());
+        double width = MathUtil.lerp(percentage, beginZone.width(), endZone.width());
+        double height = MathUtil.lerp(percentage, beginZone.height(), endZone.height());
+
+        lerpZone.setWidth((float) width).setHeight((float) height).centerX((float) middleX).centerY((float) middleY);
+        return lerpZone;
+    }
+
+    public static double percentageLerp(double value, double begin, double end){
+        double maxDistance = end - begin;
+        double valueDistance = value - begin;
+
+        if (maxDistance == 0) maxDistance = 1;
+
+        return valueDistance/maxDistance;
     }
 
     public static int randomInt(int min, int max){
@@ -12,6 +99,13 @@ public class MathUtil {
 
     public static float randomFloat(float min, float max){
         return lerp(Math.random(), min, max);
+    }
+
+    public static boolean isInRange(double value, double start, double end){
+        double min = Math.min(start, end);
+        double max = Math.max(start, end);
+
+        return min <= value && value <= max;
     }
 
     public enum EaseType{
@@ -254,6 +348,19 @@ public class MathUtil {
                 return x < 0.5
                         ? (1 - EASEOUTBOUNCE.getEase(1 - 2 * x)) / 2
                         : (1 + EASEOUTBOUNCE.getEase(2 * x - 1)) / 2;
+            }
+        },
+        EASESTEP {
+            @Override
+            public double getEase(double x) {
+                return getEaseWithSteps(x, 1);
+            }
+
+            public double getEaseWithSteps(double x, int steps){
+                if (steps == 0) return 1;
+
+                int stepsTaken = (int) (x * steps);
+                return ((double) stepsTaken /steps);
             }
         };
 

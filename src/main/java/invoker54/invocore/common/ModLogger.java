@@ -2,6 +2,7 @@ package invoker54.invocore.common;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.StackLocatorUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,11 +12,13 @@ public class ModLogger {
     private final Logger myLogger;
     private final AtomicBoolean debugMode;
     private double counter = 0;
+    private double lastTime = 0;
     private static final List<ModLogger> loggers = new ArrayList<>();
 
     private ModLogger(Logger myLogger, AtomicBoolean debugMode) {
         this.myLogger = myLogger;
         this.debugMode = debugMode;
+        this.lastTime = System.nanoTime();
     }
 
     public static ModLogger getLogger(Class<?> modClass, AtomicBoolean debugMode){
@@ -24,38 +27,41 @@ public class ModLogger {
         return newLogger;
     }
 
+    public static ModLogger getLogger(AtomicBoolean debugMode){
+        ModLogger newLogger = new ModLogger(LogManager.getLogger(StackLocatorUtil.getCallerClass(2)), debugMode);
+        loggers.add(newLogger);
+        return newLogger;
+    }
+
     public void debug(String s){
-        double time = System.nanoTime();
         if (!this.debugMode.get()) return;
         this.myLogger.debug(s);
-        counter += (System.nanoTime() - time);
     }
 
     public void info(String s){
-        double time = System.nanoTime();
         if (!this.debugMode.get()) return;
         this.myLogger.info(s);
-        counter += (System.nanoTime() - time);
     }
 
     public void warn(String s){
-        double time = System.nanoTime();
         if (!this.debugMode.get()) return;
         this.myLogger.warn(s);
-        counter += (System.nanoTime() - time);
     }
 
     public void error(String s){
-        double time = System.nanoTime();
         if (!this.debugMode.get()) return;
         this.myLogger.error(s);
-        counter += (System.nanoTime() - time);
+    }
+
+    public void resetTime(){
+        this.counter = 0;
+        this.lastTime = System.nanoTime();
     }
 
     public void timePassed(boolean resetTime){
         if (!this.debugMode.get()) return;
-        this.myLogger.info(this.myLogger.getName()+"Time passed: " + (counter/1000000000F));
-        if (resetTime) counter = 0;
+        this.myLogger.info(this.myLogger.getName() + " Time passed: " + ((System.nanoTime() - this.lastTime)/1000000000F));
+        if (resetTime) this.resetTime();
     }
 
     public static void getAllTimePassed(){
