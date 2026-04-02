@@ -1,7 +1,6 @@
 package invoker54.invocore.client.util;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
@@ -14,7 +13,6 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSink;
 import net.minecraft.util.StringDecomposer;
 import org.joml.Matrix3x2fStack;
-import org.joml.Matrix4f;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -34,15 +32,15 @@ public class TextUtil {
     }
 
     public static void render2DText(GuiGraphics graphics, Component text, boolean shadow, int maxSplits,
-                                     InvoZone renderZone, int padding, txtAlignment align){
-        RenderInfo info = getRenderInfo(text, shadow, maxSplits, renderZone.width(), renderZone.height(), padding, align);
-        render2DText(graphics, info, shadow, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), padding, align);
+                                     InvoZone renderZone, txtAlignment align){
+        RenderInfo info = getRenderInfo(text, shadow, maxSplits, renderZone.width(), renderZone.height(), 0, align);
+        render2DText(graphics, info, shadow, renderZone, 0, align);
     }
 
     public static void render3DText(PoseStack stack, Component text, boolean shadow, int maxSplits,
-                                    InvoZone renderZone, int padding, txtAlignment align){
-        RenderInfo info = getRenderInfo(text, shadow, maxSplits, renderZone.width(), renderZone.height(), padding, align);
-        render3DText(stack, info, shadow, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), padding, align);
+                                    InvoZone renderZone, txtAlignment align){
+        RenderInfo info = getRenderInfo(text, shadow, maxSplits, renderZone.width(), renderZone.height(), 0, align);
+        render3DText(stack, info, shadow, renderZone, 0, align);
     }
 
     public static RenderInfo getRenderInfo(Component text, boolean shadow, int maxSplits,
@@ -85,6 +83,13 @@ public class TextUtil {
             textLines.add(text);
         }
 
+        return getRenderInfo(textLines, shadow, maxWidth, maxHeight);
+//        renderText(stack, textLines, shadow, x0, maxWidth, y0, maxHeight, padding, align);
+    }
+
+    public static RenderInfo getRenderInfo(List<FormattedText> textLines, boolean shadow, float maxWidth, float maxHeight){
+        Font font = ClientUtil.getFont();
+
         float maxTxtHeight = textLines.size() * (7 + 1);
         maxTxtHeight += -2 + textLines.size();
 //        LOGGER.info("Max Text Height is " + maxTxtHeight);
@@ -124,24 +129,29 @@ public class TextUtil {
 //                LOGGER.info("heightFillAmount was smaller than widthFillAmount");
             //example: maxHeight is 70, txtMaxHeight is 60.
             //That means maxHeight is 1.16 times larger than the txtMaxHeight
-            scaleFactor = ((maxHeight - (align == txtAlignment.MIDDLE ? (padding * 2) : padding)) / maxTxtHeight);
+//            scaleFactor = ((maxHeight - (align == txtAlignment.MIDDLE ? (padding * 2) : padding)) / maxTxtHeight);
+            scaleFactor = (maxHeight / maxTxtHeight);
         } else if (heightFillAmount > widthFillAmount) {
 //                LOGGER.info("widthFillAmount was smaller than heightFillAmount");
             //example: maxWidth is 50, txtMaxWidth is 25.
             //That means maxWidth is 2 times larger than the txtMaxWidth
-            scaleFactor = ((maxWidth - (align == txtAlignment.MIDDLE ? (padding * 2) : padding)) / maxTxtWidth);
+//            scaleFactor = ((maxWidth - (align == txtAlignment.MIDDLE ? (padding * 2) : padding)) / maxTxtWidth);
+            scaleFactor = (maxWidth / maxTxtWidth);
         }
 
         return new RenderInfo(textLines, scaleFactor, maxTxtHeight, shadowOffset);
-//        renderText(stack, textLines, shadow, x0, maxWidth, y0, maxHeight, padding, align);
     }
 //    public static void getRenderInfo(GuiGraphics stack, List<FormattedText> textLines, boolean shadow,
 //                                     InvoZone renderZone, txtAlignment alignment){
 //        getRenderInfo(stack, textLines, shadow, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), 0, alignment);
 //    }
     public static void render2DText(GuiGraphics graphics, RenderInfo info, boolean shadow,
-                                     float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align) {
+                                      InvoZone renderZone, int padding, txtAlignment align) {
         Font font = ClientUtil.getFont();
+        float x0 = renderZone.x();
+        float maxWidth = renderZone.width();
+        float y0 = renderZone.y();
+        float maxHeight = renderZone.height();
 
         Matrix3x2fStack stack = graphics.pose();
         stack.pushMatrix();
@@ -193,8 +203,12 @@ public class TextUtil {
     }
 
     public static void render3DText(PoseStack stack, RenderInfo info, boolean shadow,
-                                    float x0, float maxWidth, float y0, float maxHeight, int padding, txtAlignment align) {
+                                    InvoZone renderZone, int padding, txtAlignment align) {
         Font font = ClientUtil.getFont();
+        float x0 = renderZone.x();
+        float maxWidth = renderZone.width();
+        float y0 = renderZone.y();
+        float maxHeight = renderZone.height();
 
 //        Matrix3x2fStack stack = graphics.pose();
         stack.pushPose();

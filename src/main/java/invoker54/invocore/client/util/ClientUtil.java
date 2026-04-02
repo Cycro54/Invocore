@@ -34,22 +34,18 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix3x2f;
 import org.joml.Matrix3x2fStack;
-import org.joml.Vector2f;
-import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
 import java.awt.*;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -186,7 +182,7 @@ public class ClientUtil {
         Matrix3x2fStack poseStack = graphics.pose().pushMatrix();
         poseStack.translate(renderZone.x(), renderZone.y());
         poseStack.scale(Math.abs(renderZone.width()), Math.abs(renderZone.height()));
-        graphics.guiRenderState.submitBlitToCurrentLayer(new BlitRenderState(RenderPipelines.GUI_TEXTURED,
+        graphics.guiRenderState.submitGuiElement(new BlitRenderState(RenderPipelines.GUI_TEXTURED,
                 TextureSetup.singleTexture(texture.getTextureView(), texture.getSampler()),
                 new Matrix3x2f(graphics.pose()), 0, 0, 1, 1,
                 uvZone.x(), uvZone.right(), uvZone.y(), uvZone.down(), -1, graphics.peekScissorStack()));

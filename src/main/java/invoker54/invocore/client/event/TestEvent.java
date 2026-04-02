@@ -1,16 +1,12 @@
 package invoker54.invocore.client.event;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import invoker54.invocore.Invocore;
 import invoker54.invocore.client.util.ClientUtil;
 import invoker54.invocore.client.util.InvoZone;
 import invoker54.invocore.client.util.TextUtil;
 import invoker54.invocore.common.ModLogger;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
@@ -21,9 +17,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
@@ -60,11 +53,13 @@ public class TestEvent {
             InvoZone renderZone = dirtIMG.getRenderZone();
             renderZone.setX(64).setY(64).setWidth(32).setHeight(32);
 //            guiGraphics.enableScissor((int) renderZone.x(), (int) renderZone.y(), (int) renderZone.right(), (int) (renderZone.down()-8f));
-            dirtIMG.render(guiGraphics);
             ClientUtil.blit2DColor(guiGraphics,new InvoZone(0, 100, 0, 100), new Color(255, 0, 0, 142).getRGB());
             ClientUtil.blit2DColor(guiGraphics, new InvoZone(0, 64, 0, 64), new Color(1,1,1, 123).getRGB());
 //            guiGraphics.disableScissor();
-
+            dirtIMG.render(guiGraphics);
+            float variable = Mth.lerp(resulta, 16f, 64f);
+            float variable2 = Mth.lerp(resulta, 0, 360);
+            InvoZone breeZone = new InvoZone(8, 16, 8, 16);
             if (!ClientUtil.getPlayer().getItemInHand(InteractionHand.MAIN_HAND).isEmpty()){
 //                stack.pushPose();
 //                stack.scale(scalex,scaley,scalez);
@@ -75,13 +70,13 @@ public class TestEvent {
 
 //                ClientUtil.blit2DItem(guiGraphics, new InvoZone((width/2F)-0.5F, 64, (float) height /2, 32),
 //                        ClientUtil.getPlayer().getItemInHand(InteractionHand.MAIN_HAND));
+                ClientUtil.blit2DItem(guiGraphics, breeZone.copy().gridStep(3,0),
+                        ClientUtil.getPlayer().getItemInHand(InteractionHand.MAIN_HAND));
             }
 //            ClientUtil.blitItem(guiGraphics, new InvoZone(0, 16, 0, 16), new ItemStack(Items.GOLDEN_APPLE));
 //            ClientUtil.blitItem(guiGraphics, new InvoZone(64, 20, 0, 20), new ItemStack(Items.GOLD_BLOCK));
 //            ClientUtil.blitItem(guiGraphics, new InvoZone(width/3F, resultSize, Mth.lerp(result, 0, height/2F), resultSize), new ItemStack(Items.GOLD_BLOCK));
-            float variable = Mth.lerp(resulta, 16f, 64f);
-            float variable2 = Mth.lerp(resulta, 0, 360);
-            InvoZone breeZone = new InvoZone(8, variable, 8, variable);
+
             InvoZone fourZone = breeZone.copy().multiply(0.5f);
             ClientUtil.blit2DColor(guiGraphics, fourZone, Color.PINK.getRGB());
 //            guiGraphics.pose().pushMatrix().translate(0,0).scale(variable2,variable2);
@@ -105,7 +100,7 @@ public class TestEvent {
             ClientUtil.blit2DColor(guiGraphics, new InvoZone(
                     width / 4F, width / 4F, height / 5F, height / 8F), Color.BLACK.getRGB());
         TextUtil.render2DText(guiGraphics, txt, true,0, new InvoZone(
-                width / 4F, width / 4F, height / 5F, height / 8F), 0, TextUtil.txtAlignment.RIGHT);
+                width / 4F, width / 4F, height / 5F, height / 8F), TextUtil.txtAlignment.RIGHT);
 //        ClientUtil.renderAll();
         });
     }
@@ -149,7 +144,7 @@ public class TestEvent {
                     append(Component.literal("\nI'm trying to help you? Foolish.".toUpperCase(Locale.ROOT))
                             .withStyle(ChatFormatting.AQUA,ChatFormatting.BOLD,ChatFormatting.OBFUSCATED));
 //            ClientUtil.blit3DColor(stack, new InvoZone(0, 10, 0, 10), Color.BLACK.getRGB()).run();
-            TextUtil.render3DText(stack, txt, true,0, renderZone, 0, TextUtil.txtAlignment.RIGHT);
+            TextUtil.render3DText(stack, txt, true,0, renderZone, TextUtil.txtAlignment.RIGHT);
             ClientUtil.blit3DItem(stack, renderZone, Items.WOODEN_AXE.getDefaultInstance(), null, null, 0);
 
             stack.popPose();
