@@ -7,11 +7,11 @@ import invoker54.invocore.client.util.InvoZone;
 import invoker54.invocore.common.ModLogger;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.render.pip.OversizedItemRenderer;
-import net.minecraft.client.gui.render.state.pip.OversizedItemRenderState;
-import net.minecraft.client.gui.render.state.pip.PictureInPictureRenderState;
 import net.minecraft.client.renderer.SubmitNodeStorage;
 import net.minecraft.client.renderer.feature.FeatureRenderDispatcher;
 import net.minecraft.client.renderer.item.TrackingItemStackRenderState;
+import net.minecraft.client.renderer.state.gui.pip.OversizedItemRenderState;
+import net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import org.joml.Matrix3f;
 import org.jspecify.annotations.Nullable;
@@ -32,7 +32,7 @@ public abstract class OversizedItemRendererMixin<T extends PictureInPictureRende
     private static final ModLogger invocore_LOGGERT = ModLogger.getLogger(new AtomicBoolean(true));
 
     @Inject(
-            method = "renderToTexture(Lnet/minecraft/client/gui/render/state/pip/OversizedItemRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;)V",
+            method = "renderToTexture(Lnet/minecraft/client/renderer/state/gui/pip/OversizedItemRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;)V",
             at = {
                     @At(value = "HEAD")
             }, cancellable = true)
@@ -49,9 +49,9 @@ public abstract class OversizedItemRendererMixin<T extends PictureInPictureRende
 //        float f2 = (float)renderZone.x() + 8.0F;
 //        float f3 = (float)renderZone.y() + 8.0F;
 //        stack.mulPose(Axis.ZP.rotation(45));
-        stack.translate(((renderZone.width()) * guiScale)/2f, ((renderZone.height()) * guiScale)/2f,0);
+        stack.translate(((renderZone.width()) * guiScale) / 2f, ((renderZone.height()) * guiScale) / 2f, 0);
         Matrix3f normal = new Matrix3f(stack.last().normal());
-        stack.scale(renderZone.width()*guiScale, -renderZone.height()*guiScale, 1);
+        stack.scale(renderZone.width() * guiScale, -renderZone.height() * guiScale, 1);
         stack.last().normal().set(normal).rotateLocalZ((float) Math.toRadians(135f));
 //        stack.last().normal().identity();
 //        stack.translate(-(renderZone.width() * guiScale) / 2.0F, 0, 0.0F);

@@ -1,7 +1,6 @@
 package invoker54.invocore.client.util;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import invoker54.invocore.client.Ticker;
@@ -10,20 +9,20 @@ import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.gui.render.pip.OversizedItemRenderer;
-import net.minecraft.client.gui.render.state.BlitRenderState;
-import net.minecraft.client.gui.render.state.ColoredRectangleRenderState;
-import net.minecraft.client.gui.render.state.GuiItemRenderState;
-import net.minecraft.client.gui.render.state.pip.OversizedItemRenderState;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.item.TrackingItemStackRenderState;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.state.gui.BlitRenderState;
+import net.minecraft.client.renderer.state.gui.ColoredRectangleRenderState;
+import net.minecraft.client.renderer.state.gui.GuiItemRenderState;
+import net.minecraft.client.renderer.state.gui.pip.OversizedItemRenderState;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
@@ -154,7 +153,7 @@ public class ClientUtil {
 //        Minecraft mc = getMinecraft();
 //        int xPos = (int)mc.mouseHandler.getScaledXPos(mc.getWindow());
 //        int yPos = (int)mc.mouseHandler.getScaledYPos(mc.getWindow());
-//        GuiGraphics graphics = new GuiGraphics(getMinecraft(), new GuiRenderState(),xPos, yPos);
+//        GuiGraphicsExtractor graphics = new GuiGraphicsExtractor(getMinecraft(), new GuiRenderState(),xPos, yPos);
 //        graphics.pose().set(stack);
 //
 //        blitImage(graphics, texture, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(),
@@ -174,7 +173,7 @@ public class ClientUtil {
 //        cachedRenderList.clear();
 //    }
 
-    public static void blit2DImage(GuiGraphics graphics, Image image) {
+    public static void blit2DImage(GuiGraphicsExtractor graphics, Image image) {
         InvoZone renderZone = image.getRenderZone().copy();
         InvoZone uvZone = image.getUVZone();
         AbstractTexture texture = ClientUtil.getMinecraft().getTextureManager().getTexture(image.location);
@@ -182,7 +181,7 @@ public class ClientUtil {
         Matrix3x2fStack poseStack = graphics.pose().pushMatrix();
         poseStack.translate(renderZone.x(), renderZone.y());
         poseStack.scale(Math.abs(renderZone.width()), Math.abs(renderZone.height()));
-        graphics.guiRenderState.submitGuiElement(new BlitRenderState(RenderPipelines.GUI_TEXTURED,
+        graphics.guiRenderState.addGuiElement(new BlitRenderState(RenderPipelines.GUI_TEXTURED,
                 TextureSetup.singleTexture(texture.getTextureView(), texture.getSampler()),
                 new Matrix3x2f(graphics.pose()), 0, 0, 1, 1,
                 uvZone.x(), uvZone.right(), uvZone.y(), uvZone.down(), -1, graphics.peekScissorStack()));
@@ -214,11 +213,11 @@ public class ClientUtil {
         poseStack.popPose();
     }
 
-    public static void blit2DColor(GuiGraphics graphics, InvoZone renderZone, int color) {
+    public static void blit2DColor(GuiGraphicsExtractor graphics, InvoZone renderZone, int color) {
         Matrix3x2fStack poseStack = graphics.pose().pushMatrix();
         poseStack.translate(renderZone.x(), renderZone.y());
         poseStack.scale(Math.abs(renderZone.width()), Math.abs(renderZone.height()));
-        graphics.guiRenderState.submitGuiElement(new ColoredRectangleRenderState(RenderPipelines.GUI,
+        graphics.guiRenderState.addGuiElement(new ColoredRectangleRenderState(RenderPipelines.GUI,
                 TextureSetup.noTexture(), new Matrix3x2f(graphics.pose()), 0, 0, 1, 1, color, color, graphics.peekScissorStack()));
         poseStack.popMatrix();
     }
@@ -244,11 +243,11 @@ public class ClientUtil {
         poseStack.popPose();
     }
 
-    public static class InvoItemState extends GuiItemRenderState{
+    public static class InvoItemState extends GuiItemRenderState {
         private final InvoZone renderZone;
 
-        public InvoItemState(String name, Matrix3x2f pose, TrackingItemStackRenderState itemStackRenderState, InvoZone renderZone,@Nullable ScreenRectangle scissorArea) {
-            super(name, pose, itemStackRenderState, 0, 0, scissorArea);
+        public InvoItemState(Matrix3x2f pose, TrackingItemStackRenderState itemStackRenderState, InvoZone renderZone,@Nullable ScreenRectangle scissorArea) {
+            super(pose, itemStackRenderState, 0, 0, scissorArea);
             this.renderZone = renderZone;
 //            LOGGER.error("dawd: " + this.itemStackRenderState().isOversizedInGui());
         }
@@ -285,7 +284,7 @@ public class ClientUtil {
 //        }
 //    }
 
-    public static void blit2DItem(GuiGraphics graphics, InvoZone renderZone, ItemStack itemStack) {
+    public static void blit2DItem(GuiGraphicsExtractor graphics, InvoZone renderZone, ItemStack itemStack) {
         Matrix3x2fStack poseStack = graphics.pose().pushMatrix();
 //            poseStack.translate(renderZone.x(), renderZone.y());
 //            poseStack.scale(1,1);
@@ -297,7 +296,7 @@ public class ClientUtil {
                 TrackingItemStackRenderState trackingitemstackrenderstate = new TrackingItemStackRenderState();
                 getMinecraft().getItemModelResolver().updateForTopItem(trackingitemstackrenderstate, itemStack, ItemDisplayContext.GUI, null, null, 0);
                 OversizedItemRenderer oversizeditemrenderer = new OversizedItemRenderer(getMinecraft().renderBuffers().bufferSource());
-                GuiItemRenderState itemRenderState = new InvoItemState(itemStack.getItem().getName().toString(), new Matrix3x2f(poseStack),
+                GuiItemRenderState itemRenderState = new InvoItemState(new Matrix3x2f(poseStack),
                         trackingitemstackrenderstate, renderZone, graphics.peekScissorStack());
                 ScreenRectangle screenrectangle = renderZone.rect(true);
                 OversizedItemRenderState oversizeditemrenderstate = new OversizedItemRenderState(
@@ -332,7 +331,7 @@ public class ClientUtil {
     public static void blit3DItem(PoseStack poseStack, InvoZone renderZone, ItemStack itemStack, Level level, Entity entity, int seed) {
         PoseStack altStack = new PoseStack();
         altStack.last().set(poseStack.last());
-        pipelineConvertor = (t) -> t.toBuilder().withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST).build();
+        pipelineConvertor = (t) -> t.toBuilder().withoutStencilTest().build();
 //            LOGGER.error("Starting");
         if (!itemStack.isEmpty()) {
 //            TrackingItemStackRenderState trackingitemstackrenderstate = new TrackingItemStackRenderState();
@@ -361,7 +360,7 @@ public class ClientUtil {
         pipelineConvertor = null;
     }
 
-//        public static void blitItem(GuiGraphics graphics, float x0, float width, float y0, float height, ItemStack stack){
+//        public static void blitItem(GuiGraphicsExtractor graphics, float x0, float width, float y0, float height, ItemStack stack){
 //        getTextureManager().getTexture(TextureAtlas.LOCATION_BLOCKS).setFilter(false, false);
 //        RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
 //        RenderSystem.enableBlend();
@@ -528,8 +527,8 @@ public class ClientUtil {
 //        }
 //
 //        @Override
-//        protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-//            super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+//        protected void renderWidget(GuiGraphicsExtractor GuiGraphicsExtractor, int mouseX, int mouseY, float partialTick) {
+//            super.renderWidget(GuiGraphicsExtractor, mouseX, mouseY, partialTick);
 //        }
 //    }
     public static String ticksToTime(int ticks) {
@@ -620,7 +619,7 @@ public class ClientUtil {
             this.type = imageType;
         }
 
-        public void render(GuiGraphics graphics) {
+        public void render(GuiGraphicsExtractor graphics) {
             blit2DImage(graphics, this);
 //            TEXTURE_MANAGER.release(this.location);
         }

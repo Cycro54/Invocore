@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
@@ -31,7 +31,7 @@ public class TextUtil {
         RIGHT
     }
 
-    public static void render2DText(GuiGraphics graphics, Component text, boolean shadow, int maxSplits,
+    public static void render2DText(GuiGraphicsExtractor graphics, Component text, boolean shadow, int maxSplits,
                                      InvoZone renderZone, txtAlignment align){
         RenderInfo info = getRenderInfo(text, shadow, maxSplits, renderZone.width(), renderZone.height(), 0, align);
         render2DText(graphics, info, shadow, renderZone, 0, align);
@@ -141,11 +141,11 @@ public class TextUtil {
 
         return new RenderInfo(textLines, scaleFactor, maxTxtHeight, shadowOffset);
     }
-//    public static void getRenderInfo(GuiGraphics stack, List<FormattedText> textLines, boolean shadow,
+//    public static void getRenderInfo(GuiGraphicsExtractor stack, List<FormattedText> textLines, boolean shadow,
 //                                     InvoZone renderZone, txtAlignment alignment){
 //        getRenderInfo(stack, textLines, shadow, renderZone.x(), renderZone.width(), renderZone.y(), renderZone.height(), 0, alignment);
 //    }
-    public static void render2DText(GuiGraphics graphics, RenderInfo info, boolean shadow,
+    public static void render2DText(GuiGraphicsExtractor graphics, RenderInfo info, boolean shadow,
                                       InvoZone renderZone, int padding, txtAlignment align) {
         Font font = ClientUtil.getFont();
         float x0 = renderZone.x();
@@ -195,7 +195,7 @@ public class TextUtil {
             }
 
             graphics.pose().pushMatrix().translate(x,y);
-            graphics.drawString(ClientUtil.getFont(), Language.getInstance().getVisualOrder(currText), 0,0, -1, shadow);
+            graphics.text(ClientUtil.getFont(), Language.getInstance().getVisualOrder(currText), 0,0, -1, shadow);
             graphics.pose().popMatrix();
         }
 
@@ -266,7 +266,7 @@ public class TextUtil {
         stack.popPose();
     }
 
-    public static void getRenderInfo(FormattedText text, GuiGraphics graphics, float x, float y, boolean shadow){
+    public static void getRenderInfo(FormattedText text, GuiGraphicsExtractor graphics, float x, float y, boolean shadow){
 
 
 //        boolean flag = !player.isDiscrete();

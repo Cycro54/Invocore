@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "invoker54.invocore.mixin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_25",
   "refmap": "invocore.refmap.json",
   "client": [
     "GlRenderPipelineMixin",
